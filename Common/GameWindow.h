@@ -40,7 +40,7 @@ private:
 	bool      mResizing = false;   // are the resize bars being dragged?
 	bool      mFullscreenState = false;// fullscreen enabled
 	int mClientWidth = 800;
-	int mClientHeight = 600;
+	int mClientHeight = 800;
 	std::wstring mMainWndCaption = L"d3d App";
 	WindowMessageHandler* mHandlers[maxHandlerCount];
 };

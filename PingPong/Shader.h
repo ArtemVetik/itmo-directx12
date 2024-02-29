@@ -7,7 +7,7 @@
 
 struct ObjectConstants
 {
-	DirectX::XMFLOAT4X4 WorldViewProj = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4 Position = { };
 };
 
 class Shader
