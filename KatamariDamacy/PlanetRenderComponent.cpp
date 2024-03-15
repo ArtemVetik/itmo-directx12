@@ -42,9 +42,12 @@ void PlanetRenderComponent::Update(const GameTimer& t, DirectX::XMMATRIX viewPro
 		mPosition
 	);
 
+	DirectX::XMMATRIX texTransform = XMLoadFloat4x4(&MathHelper::Identity4x4());
+
 	ObjectConstants objConstants;
-	objConstants.Position = {};
 	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixMultiply(viewProj, DirectX::XMMatrixTranspose(transform)));
+	XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
+
 	mShader->CbCopyData(0, objConstants);
 }
 
