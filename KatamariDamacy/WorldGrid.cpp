@@ -14,7 +14,7 @@ void WorldGrid::Build()
 void WorldGrid::Update(const GameTimer& t, DirectX::XMMATRIX viewProj)
 {
 	ObjectConstants objConstants;
-	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, viewProj);
+	DirectX::XMStoreFloat4x4(&objConstants.ViewProj, viewProj);
 	mMaterial->CopyData(0, objConstants);
 }
 
