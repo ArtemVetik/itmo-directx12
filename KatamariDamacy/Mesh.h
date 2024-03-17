@@ -17,4 +17,5 @@ public:
 	virtual D3D12_INDEX_BUFFER_VIEW GetIndexBufferView() const = 0;
 	virtual std::unordered_map<std::string, SubmeshGeometry> GetDrawArgs() const = 0;
 	virtual UINT GetVertexCount() const = 0;
+	virtual DirectX::BoundingBox GetBoundingBox() const = 0;
 };

@@ -30,6 +30,20 @@ void D3DApp::Set4xMsaaState(bool value)
     }
 }
 
+void D3DApp::BeginCommands()
+{
+	ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
+}
+
+void D3DApp::EndCommands()
+{
+	ThrowIfFailed(mCommandList->Close());
+    ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+    mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+	FlushCommandQueue();
+}
+
 bool D3DApp::Initialize()
 {
 	if(!InitDirect3D())

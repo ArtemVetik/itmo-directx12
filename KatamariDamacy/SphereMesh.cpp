@@ -163,3 +163,8 @@ UINT SphereMesh::GetVertexCount() const
 {
 	return 100;
 }
+
+DirectX::BoundingBox SphereMesh::GetBoundingBox() const
+{
+	return DirectX::BoundingBox();
+}

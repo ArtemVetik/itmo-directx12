@@ -149,11 +149,12 @@
     <ClCompile Include="..\Common\GameWindow.cpp" />
     <ClCompile Include="..\Common\GeometryGenerator.cpp" />
     <ClCompile Include="..\Common\MathHelper.cpp" />
-    <ClCompile Include="CameraRootController.cpp" />
+    <ClCompile Include="DefaultMaterial.cpp" />
     <ClCompile Include="FileMesh.cpp" />
-    <ClCompile Include="PlanetsApp.cpp" />
-    <ClCompile Include="PlanetRenderComponent.cpp" />
+    <ClCompile Include="KatamariApp.cpp" />
+    <ClCompile Include="KatamariObject.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Player.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="SphereMesh.cpp" />
     <ClCompile Include="WorldGrid.cpp" />
@@ -171,33 +172,31 @@
     <ClInclude Include="..\Common\GeometryGenerator.h" />
     <ClInclude Include="..\Common\MathHelper.h" />
     <ClInclude Include="..\Common\UploadBuffer.h" />
-    <ClInclude Include="CameraRootController.h" />
+    <ClInclude Include="DefaultMaterial.h" />
     <ClInclude Include="FileMesh.h" />
     <ClInclude Include="Mesh.h" />
-    <ClInclude Include="PlanetRoot.h" />
-    <ClInclude Include="PlanetsApp.h" />
-    <ClInclude Include="PlanetRenderComponent.h" />
+    <ClInclude Include="KatamariApp.h" />
+    <ClInclude Include="KatamariObject.h" />
+    <ClInclude Include="Player.h" />
     <ClInclude Include="RenderComponent.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="SphereMesh.h" />
+    <ClInclude Include="Transformable.h" />
     <ClInclude Include="WorldGrid.h" />
     <ClInclude Include="WorldGridMesh.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="RetroCar.sdkmesh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets" Condition="Exists('packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" />
-    <Import Project="packages\Assimp.3.0.0\build\native\Assimp.targets" Condition="Exists('packages\Assimp.3.0.0\build\native\Assimp.targets')" />
+    <Import Project="packages\AssimpCpp.5.0.1.6\build\native\AssimpCpp.targets" Condition="Exists('packages\AssimpCpp.5.0.1.6\build\native\AssimpCpp.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets'))" />
-    <Error Condition="!Exists('packages\Assimp.3.0.0\build\native\Assimp.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.3.0.0\build\native\Assimp.targets'))" />
+    <Error Condition="!Exists('packages\AssimpCpp.5.0.1.6\build\native\AssimpCpp.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\AssimpCpp.5.0.1.6\build\native\AssimpCpp.targets'))" />
   </Target>
 </Project>

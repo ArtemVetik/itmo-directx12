@@ -1,35 +1,15 @@
 #include "Shader.h"
 
-Shader::Shader(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ID3D12CommandAllocator* directCmdListAlloc, ID3D12CommandQueue* commandQueue)
+Shader::Shader(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
 	mDevice = device;
 	mCommandList = commandList;
-	mDirectCmdListAlloc = directCmdListAlloc;
-	mCommandQueue = commandQueue;
 }
 
 void Shader::Initialize()
 {
-	ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc, nullptr));
-
-	mTexture = std::make_unique<Texture>();
-	mTexture->Name = "woodCrateTex";
-	mTexture->Filename = L"DefaultMaterial_albedo.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice,
-		mCommandList, mTexture->Filename.c_str(),
-		mTexture->Resource, mTexture->UploadHeap));
-
-	mCbvSrvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
 	BuildRootSignature();
-	BuildDescriptorHeap();
-	BuildConstantBuffers();
 	BuildShadersAndInputLayout();
-	BuildPSO();
-
-	ThrowIfFailed(mCommandList->Close());
-	ID3D12CommandList* cmdsLists[] = { mCommandList };
-	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 }
 
 void Shader::BuildShadersAndInputLayout()
@@ -45,59 +25,6 @@ void Shader::BuildShadersAndInputLayout()
 		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
-}
-
-void Shader::BuildDescriptorHeap()
-{
-	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc {};
-	cbvHeapDesc.NumDescriptors = 1;
-	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	//cbvHeapDesc.NodeMask = 0;
-	ThrowIfFailed(mDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
-}
-
-void Shader::BuildConstantBuffers()
-{
-
-	//mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(mDevice, 1, true);
-
-	// UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
-	//
-	// D3D12_GPU_VIRTUAL_ADDRESS cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
-	// // Offset to the ith object constant buffer in the buffer.
-	// int boxCBufIndex = 0;
-	// cbAddress += boxCBufIndex * objCBByteSize;
-	//
-	// D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-	// cbvDesc.BufferLocation = cbAddress;
-	// cbvDesc.SizeInBytes = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
-
-	// mDevice->CreateConstantBufferView(
-	// 	&cbvDesc,
-	// 	mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-	
-
-	
-	
-	mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(mDevice, 1, true);
-	
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-	
-	auto woodCrateTexR = mTexture->Resource;
-	
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = woodCrateTexR->GetDesc().Format;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = woodCrateTexR->GetDesc().MipLevels;
-	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	
-	mDevice->CreateShaderResourceView(woodCrateTexR.Get(), &srvDesc, hDescriptor);
-
-	// -------------------------
-
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers()
@@ -199,89 +126,28 @@ void Shader::BuildRootSignature()
 		IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
 
-void Shader::BuildPSO()
+D3D12_INPUT_LAYOUT_DESC Shader::GetInputLayout() const
 {
-	mDevice->QueryInterface(IID_PPV_ARGS(&mInfoQueue));
-	// Enable the desired message categories
-	mInfoQueue->SetBreakOnCategory(D3D12_MESSAGE_CATEGORY_EXECUTION, true);
-	mInfoQueue->SetBreakOnCategory(D3D12_MESSAGE_CATEGORY_INITIALIZATION, true);
-	mInfoQueue->SetBreakOnCategory(D3D12_MESSAGE_CATEGORY_COMPILATION, true);
-	mInfoQueue->SetBreakOnCategory(D3D12_MESSAGE_CATEGORY_STATE_SETTING, true);
+	return { mInputLayout.data(), (UINT)mInputLayout.size() };
+}
 
+ID3D12RootSignature* Shader::GetRootSignature() const
+{
+	return mRootSignature.Get();
+}
 
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
-	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	psoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
-	psoDesc.pRootSignature = mRootSignature.Get();
-	psoDesc.VS =
-	{
+D3D12_SHADER_BYTECODE Shader::GetVS() const
+{
+	return {
 		reinterpret_cast<BYTE*>(mvsByteCode->GetBufferPointer()),
 		mvsByteCode->GetBufferSize()
 	};
-	psoDesc.PS =
-	{
+}
+
+D3D12_SHADER_BYTECODE Shader::GetPS() const
+{
+	return {
 		reinterpret_cast<BYTE*>(mpsByteCode->GetBufferPointer()),
 		mpsByteCode->GetBufferSize()
 	};
-	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	psoDesc.SampleMask = UINT_MAX;
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 1;
-	psoDesc.RTVFormats[0] = Constants::mBackBufferFormat;
-	psoDesc.SampleDesc.Count = Constants::m4xMsaaState ? 4 : 1;
-	psoDesc.SampleDesc.Quality = Constants::m4xMsaaState ? (Constants::m4xMsaaQuality - 1) : 0;
-	psoDesc.DSVFormat = Constants::mDepthStencilFormat;
-
-	//ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
-	HRESULT hr = mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO));
-
-	if (FAILED(hr))
-	{
-		for (size_t i = 0; i < mInfoQueue->GetNumStoredMessages(); i++)
-		{
-			SIZE_T messageLength;
-			mInfoQueue->GetMessage(i, nullptr, &messageLength);
-
-			D3D12_MESSAGE* pMessage = (D3D12_MESSAGE*)malloc(messageLength);
-			mInfoQueue->GetMessage(i, pMessage, &messageLength);
-
-			// Handle or log the error message
-			printf("My Direct3D 12 Error: %s\n", pMessage->pDescription);
-
-			free(pMessage);
-		}
-
-		mInfoQueue->ClearStoredMessages();
-		throw - 1;
-
-		// Handle the main HRESULT error (if needed)
-		// e.g., printf("CreateGraphicsPipelineState failed with HRESULT 0x%X\n", hr);
-	}
-}
-
-void Shader::SetRenderState(ID3D12GraphicsCommandList* commandList)
-{
-	ID3D12DescriptorHeap* descriptorHeaps[] = { mCbvHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
-	commandList->SetGraphicsRootSignature(mRootSignature.Get());
-
-	commandList->SetPipelineState(mPSO.Get());
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
-	tex.Offset(0, mCbvSrvDescriptorSize);
-
-	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
-	D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = mObjectCB->Resource()->GetGPUVirtualAddress() + 0 * objCBByteSize;
-
-	commandList->SetGraphicsRootDescriptorTable(0, tex);
-	mCommandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
-
-}
-
-void Shader::CbCopyData(int elementIndex, const ObjectConstants& data)
-{
-	mObjectCB->CopyData(elementIndex, data);
 }

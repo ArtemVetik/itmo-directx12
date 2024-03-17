@@ -1,9 +1,9 @@
 #include "WorldGrid.h"
 
-WorldGrid::WorldGrid(Mesh* mesh, Shader* shader)
+WorldGrid::WorldGrid(Mesh* mesh, DefaultMaterial* material)
 {
 	mMesh = mesh;
-	mShader = shader;
+	mMaterial = material;
 }
 
 void WorldGrid::Build()
@@ -15,7 +15,7 @@ void WorldGrid::Update(const GameTimer& t, DirectX::XMMATRIX viewProj)
 {
 	ObjectConstants objConstants;
 	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, viewProj);
-	mShader->CbCopyData(0, objConstants);
+	mMaterial->CopyData(0, objConstants);
 }
 
 void WorldGrid::Draw(const GameTimer& t, ID3D12GraphicsCommandList* commandList)
@@ -24,7 +24,7 @@ void WorldGrid::Draw(const GameTimer& t, ID3D12GraphicsCommandList* commandList)
 	commandList->IASetIndexBuffer(&mMesh->GetIndexBufferView());
 	commandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 
-	mShader->SetRenderState(commandList);
+	mMaterial->SetRenderState();
 
 	for (auto& arg : mMesh->GetDrawArgs())
 	{

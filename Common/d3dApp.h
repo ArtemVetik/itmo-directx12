@@ -31,6 +31,9 @@ public:
     ID3D12Device* GetDevice() { return md3dDevice.Get(); }
     ID3D12GraphicsCommandList* GetCommandList() { return mCommandList.Get(); }
 
+	void BeginCommands();
+	void EndCommands();
+	
     virtual bool Initialize();
 
     void Update();
@@ -43,7 +46,7 @@ protected:
 	virtual void OnUpdate(const GameTimer& gt)=0;
     virtual void OnDraw(const GameTimer& gt)=0;
 
-public:
+protected:
 
 	bool InitDirect3D();
 	void CreateCommandObjects();
@@ -61,13 +64,13 @@ public:
     void LogAdapterOutputs(IDXGIAdapter* adapter);
     void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
 
-public:
+protected:
 
     ID3D12InfoQueue* mInfoQueue;
 
     GameWindow* mGameWindow;
 
-	// Used to keep track of the ìdelta-timeî and game time (ß4.4).
+	// Used to keep track of the ‚Äúdelta-time‚Äù and game time (¬ß4.4).
 	GameTimer mTimer;
 	
     Microsoft::WRL::ComPtr<IDXGIFactory4> mdxgiFactory;
