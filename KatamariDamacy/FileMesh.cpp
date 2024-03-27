@@ -7,7 +7,6 @@ FileMesh::FileMesh(ID3D12Device* device, ID3D12GraphicsCommandList* commandList,
 	mPath = path;
 }
 
-#include <iostream>
 
 void FileMesh::Build()
 {

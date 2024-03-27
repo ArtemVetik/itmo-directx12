@@ -16,6 +16,11 @@ bool KatamariApp::Initialize()
 	if (!D3DApp::Initialize())
 		return false;
 
+	md3dDevice->QueryInterface(IID_PPV_ARGS(&infoQueue));
+	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+	//infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, FALSE);
+
 	return true;
 }
 
@@ -62,9 +67,23 @@ void KatamariApp::Handle(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		component->HandleMessage(hwnd, msg, wParam, lParam);
 }
 
+void KatamariApp::InitShadowMap()
+{
+	mShadowShader = new Shader(md3dDevice.Get(), mCommandList.Get(), L"Shaders\\Shadows.hlsl");
+	mShadowShader->Initialize();
+
+	mShadowMap = std::make_unique<ShadowMap>(md3dDevice.Get(), mShadowShader, 2048, 2048);
+	mShadowMap->Initialize(mDsvHeap->GetCPUDescriptorHandleForHeapStart());
+}
+
 void KatamariApp::AddComponent(RenderComponent* component)
 {
 	mComponents.push_back(component);
+}
+
+void KatamariApp::AddSSComponent(RenderComponent* component)
+{
+	mSSComponents.push_back(component);
 }
 
 void KatamariApp::RemoveComponent(RenderComponent* component)
@@ -91,12 +110,14 @@ void KatamariApp::OnUpdate(const GameTimer& gt)
 {
 	mCamera.UpdateViewMatrix();
 
+	mShadowMap->Update();
+
 	DirectX::XMMATRIX view = mCamera.GetView();
 	DirectX::XMMATRIX proj = mCamera.GetProj();
 	DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
 
 	for (auto& component : mComponents)
-		component->Update(gt, DirectX::XMMatrixTranspose(viewProj));
+		component->Update(gt, DirectX::XMMatrixTranspose(viewProj), mShadowMap->GetConstants());
 }
 
 void KatamariApp::OnDraw(const GameTimer& gt)
@@ -108,6 +129,8 @@ void KatamariApp::OnDraw(const GameTimer& gt)
 	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
 	// Reusing the command list reuses memory.
 	ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
+
+	mShadowMap->Draw(gt, mCommandList.Get(), mComponents);
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
@@ -124,6 +147,9 @@ void KatamariApp::OnDraw(const GameTimer& gt)
 	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
 	for (auto& component : mComponents)
+		component->Draw(gt, mCommandList.Get());
+
+	for (auto& component : mSSComponents)
 		component->Draw(gt, mCommandList.Get());
 
 	// Indicate a state transition on the resource usage.

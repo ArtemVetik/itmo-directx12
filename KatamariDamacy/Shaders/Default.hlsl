@@ -10,24 +10,7 @@
     #define NUM_SPOT_LIGHTS 0
 #endif
 
-#include "LightingUtil.hlsl"
-
-Texture2D 		gDiffuseMap : register(t0);
-SamplerState 	gsamLinear  : register(s0);
-
-cbuffer cbPerObject : register(b0)
-{
-	float4x4 gWorld;
-	float4x4 gViewProj;
-    float4x4 gTexTransform;
-	float4 gDiffuseAlbedo;
-	float4 gAmbientLight;
-	float3 gEyePosW;
-	float  gRoughness;
-	float3 gFresnelR0;
-	float gEmpty;
-	Light gLights[MaxLights];	
-};
+#include "Common.hlsl"
 
 struct VertexIn
 {
@@ -39,7 +22,8 @@ struct VertexIn
 struct VertexOut
 {
 	float4 PosH    : SV_POSITION;
-    float3 PosW    : POSITION;
+	float4 ShadowPosH : POSITION0;
+    float3 PosW    : POSITION1;
     float3 NormalW : NORMAL;
 	float2 TexC  : TEXCOORD;
 };
@@ -61,12 +45,14 @@ VertexOut VS(VertexIn vin)
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
     vout.TexC = mul(texC, gTexTransform).xy;
 
+	vout.ShadowPosH = mul(posW, gShadowTransform);
+
     return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamLinear, pin.TexC) * gDiffuseAlbedo;
+	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamLinearWrap, pin.TexC) * gDiffuseAlbedo;
 
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
@@ -77,10 +63,13 @@ float4 PS(VertexOut pin) : SV_Target
     // Light terms.
     float4 ambient = gAmbientLight*diffuseAlbedo;
 	
-	
+	// Only the first light casts a shadow.
+    float3 shadowFactor = float3(1.0f, 1.0f, 1.0f);
+    shadowFactor[0] = CalcShadowFactor(pin.ShadowPosH);
+	//return float4(shadowFactor, 1);
     const float shininess = 1.0f - gRoughness;
     Material mat = { diffuseAlbedo, gFresnelR0, shininess };
-    float3 shadowFactor = 1.0f;
+ 
     float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
         pin.NormalW, toEyeW, shadowFactor);
 

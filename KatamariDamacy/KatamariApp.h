@@ -6,6 +6,7 @@
 #include "../Common/Camera.h"
 #include "RenderComponent.h"
 #include "Mesh.h"
+#include "ShadowMap.h"
 
 
 class KatamariApp : public D3DApp
@@ -18,10 +19,15 @@ public:
 
     virtual bool Initialize()override;
     virtual void Handle(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
+    void InitShadowMap();
 
     void AddComponent(RenderComponent* component);
+    void AddSSComponent(RenderComponent* component);
     void RemoveComponent(RenderComponent* component);
     Camera* GetMainCamera();
+    ShadowMap* GetShadowMap() { return mShadowMap.get(); }
+
+    ID3D12InfoQueue* infoQueue;
 private:
     virtual void Resize()override;
     virtual void OnUpdate(const GameTimer& gt)override;
@@ -29,6 +35,9 @@ private:
 
 private:
     std::vector<RenderComponent*> mComponents;
+    std::vector<RenderComponent*> mSSComponents;
     Camera mCamera;
     POINT mLastMousePos;
+    std::unique_ptr<ShadowMap> mShadowMap;
+    Shader* mShadowShader;
 };

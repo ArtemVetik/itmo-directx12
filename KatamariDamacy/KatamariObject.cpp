@@ -23,7 +23,7 @@ void KatamariObject::Build()
 
 }
 
-void KatamariObject::Update(const GameTimer& t, DirectX::XMMATRIX viewProj)
+void KatamariObject::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, ShadowMapConstants shadowConstants)
 {
 	DirectX::XMMATRIX transform = DirectX::XMMatrixAffineTransformation(
 		mSettings.Scale,
@@ -39,29 +39,25 @@ void KatamariObject::Update(const GameTimer& t, DirectX::XMMATRIX viewProj)
 
 	ObjectConstants objConstants{};
 	XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(transform));
-	DirectX::XMStoreFloat4x4(&objConstants.ViewProj, viewProj);
+	XMStoreFloat4x4(&objConstants.ViewProj, viewProj);
+	DirectX::XMMATRIX shadowTransform = DirectX::XMLoadFloat4x4(&shadowConstants.ShadowTransform);
+	DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform, DirectX::XMMatrixTranspose(shadowTransform));
 	XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
-	DirectX::XMStoreFloat3(&objConstants.EyePosW, mApp->GetMainCamera()->GetPosition());
-	objConstants.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
-	objConstants.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
-	objConstants.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
-	objConstants.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
-	objConstants.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
-	objConstants.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
-	objConstants.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
-	objConstants.Lights[3].Position = { 0.0f, 1.0f, 0.0f };
-	objConstants.Lights[3].Strength = { 2.15f, 2.15f, 2.15f };
-	objConstants.Lights[3].FalloffStart = 0.0f;
-	objConstants.Lights[3].FalloffStart = 10.0f;
+	XMStoreFloat3(&objConstants.EyePosW, mApp->GetMainCamera()->GetPosition());
 
 	mMaterial->CopyData(0, objConstants);
+
+	XMStoreFloat4x4(&objConstants.ViewProj, shadowConstants.ViewProj);
+	objConstants.EyePosW = shadowConstants.EyePosW;
+
+	mMaterial->CopyData(1, objConstants);
 
 	mStartBoundingBox.Transform(mCollision, transform);
 }
 
-void KatamariObject::Draw(const GameTimer& t, ID3D12GraphicsCommandList* commandList)
+void KatamariObject::Draw(const GameTimer& t, ID3D12GraphicsCommandList* commandList, int cbOffset)
 {
-	mMaterial->SetRenderState();
+	mMaterial->SetRenderState(cbOffset);
 
 	commandList->IASetVertexBuffers(0, 1, &mMesh->GetVertexBufferView());
 	commandList->IASetIndexBuffer(&mMesh->GetIndexBufferView());

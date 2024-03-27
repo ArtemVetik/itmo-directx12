@@ -12,8 +12,8 @@ class Player : public RenderComponent, public Transformable
 public:
 	Player(Camera* camera, DefaultMaterial* material, Mesh* mesh, std::vector<KatamariObject*> objects);
 	void Build() override;
-	void Update(const GameTimer& t, DirectX::XMMATRIX viewProj) override;
-	void Draw(const GameTimer& t, ID3D12GraphicsCommandList* commandList) override;
+	void Update(const GameTimer& t, DirectX::XMMATRIX viewProj, ShadowMapConstants shadowConstants) override;
+	void Draw(const GameTimer& t, ID3D12GraphicsCommandList* commandList, int cbOffset = 0) override;
 	void HandleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
 
 	DirectX::XMMATRIX GetTransformMatrix() override;
