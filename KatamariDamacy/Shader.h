@@ -17,13 +17,13 @@ struct ObjectConstants
 	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 ViewProj = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 ShadowTransform = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 ShadowTransform[4] = { MathHelper::Identity4x4(), MathHelper::Identity4x4(), MathHelper::Identity4x4(), MathHelper::Identity4x4() };
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
 	DirectX::XMFLOAT4 AmbientLight = { 0.6f, 0.6f, 0.6f, 1.0f };
 	DirectX::XMFLOAT3 EyePosW = { 0.0f, 0.0f, 0.0f };
-	float Roughness = 0.2f;
+	UINT ShadowIndex = 0;
 	DirectX::XMFLOAT3 FresnelR0 = { 0.05f, 0.05f, 0.05f };
-	float gEmpty = 0.0f;
+	float Roughness = 0.2;
 	Light Lights[MaxLights]
 	{
 		 { { 0.6f, 0.6f, 0.6f }, 1.0f, { 0.57735f, -0.57735f, 0.57735f }, 10.0f, { }, 64.0f },
