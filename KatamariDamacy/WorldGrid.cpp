@@ -15,8 +15,8 @@ void WorldGrid::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, std::vect
 {
 	ObjectConstants objConstants;
 	DirectX::XMStoreFloat4x4(&objConstants.ViewProj, viewProj);
-	DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform[0], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&shadowConstants[0].ShadowTransform)));
-	DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform[1], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&shadowConstants[1].ShadowTransform)));
+	for (size_t i = 0; i < shadowConstants.size(); i++)
+		DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform[i], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&shadowConstants[i].ShadowTransform)));
 	mMaterial->CopyData(0, objConstants);
 
 	for (size_t i = 0; i < shadowConstants.size(); i++)

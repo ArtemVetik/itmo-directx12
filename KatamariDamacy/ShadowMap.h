@@ -42,7 +42,7 @@ public:
 private:
 	void BuildDescriptors();
 	void BuildResource();
-
+	void CalcCascadePos(Camera camera, float nearDist, float farDist, DirectX::XMVECTOR& centerPosOut, DirectX::XMFLOAT3 &minPos, DirectX::XMFLOAT3& maxPos);
 private:
 
 	ID3D12Device* mDevice;
@@ -71,6 +71,8 @@ private:
 	DirectX::XMFLOAT4X4 mShadowTransform = MathHelper::Identity4x4();
 
 	int mIndex;
+	DirectX::XMVECTOR mLightPos;
+	DirectX::XMVECTOR mTargetPos;
 };
 
 

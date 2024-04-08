@@ -52,7 +52,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		WorldGridMesh gridMesh(theApp.GetDevice(), theApp.GetCommandList());
 		gridMesh.Build();
 
-		FileMesh floorMesh(theApp.GetDevice(), theApp.GetCommandList(), "Models/plane.fbx");
+		//FileMesh floorMesh(theApp.GetDevice(), theApp.GetCommandList(), "Models/Floor.obj");
+		//floorMesh.Build();
+		GeometryGenerator geoGen;
+		GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 30.0f, 60, 40);
+		SSQuadMesh floorMesh(theApp.GetDevice(), theApp.GetCommandList(), grid);
 		floorMesh.Build();
 
 		SphereMesh sphereMesh(theApp.GetDevice(), theApp.GetCommandList());
@@ -73,19 +77,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		FileMesh appleMesh(theApp.GetDevice(), theApp.GetCommandList(), "Models/Apple.fbx");
 		appleMesh.Build();
 
-		GeometryGenerator geoGen;
-		SSQuadMesh ssQuadMesh1(theApp.GetDevice(), theApp.GetCommandList(), geoGen.CreateQuad(0.0f, -0.2f, 0.5f, 0.5f, 0.0f));
+		SSQuadMesh ssQuadMesh1(theApp.GetDevice(), theApp.GetCommandList(), geoGen.CreateQuad(-1.0f, -0.5f, 0.5f, 0.5f, 0.0f));
 		ssQuadMesh1.Build();
-		SSQuadMesh ssQuadMesh2(theApp.GetDevice(), theApp.GetCommandList(), geoGen.CreateQuad(-1.0f, -0.2f, 0.5f, 0.5f, 0.0f));
+		SSQuadMesh ssQuadMesh2(theApp.GetDevice(), theApp.GetCommandList(), geoGen.CreateQuad(-0.5f, -0.5f, 0.5f, 0.5f, 0.0f));
 		ssQuadMesh2.Build();
+		SSQuadMesh ssQuadMesh3(theApp.GetDevice(), theApp.GetCommandList(), geoGen.CreateQuad(0.0f, -0.5f, 0.5f, 0.5f, 0.0f));
+		ssQuadMesh3.Build();
+		SSQuadMesh ssQuadMesh4(theApp.GetDevice(), theApp.GetCommandList(), geoGen.CreateQuad(0.5f, -0.5f, 0.5f, 0.5f, 0.0f));
+		ssQuadMesh4.Build();
 
-		DefaultMaterial floorMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
-		floorMaterial.Initialize("Models/Floortile1Color.dds");
+		DefaultMaterial floorMaterial1(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
+		floorMaterial1.Initialize("Models/tile.dds");
+		DefaultMaterial floorMaterial2(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
+		floorMaterial2.Initialize("Models/tile.dds");
+		DefaultMaterial floorMaterial3(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
+		floorMaterial3.Initialize("Models/tile.dds");
+		DefaultMaterial floorMaterial4(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
+		floorMaterial4.Initialize("Models/tile.dds");
 
 		DefaultMaterial gridMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
 		gridMaterial.Initialize("Models/DefaultMaterial_albedo.dds");
 
-		WorldGrid grid(&gridMesh, &gridMaterial);
+		WorldGrid gridDebug(&gridMesh, &gridMaterial);
 
 		DefaultMaterial boxMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
 		boxMaterial.Initialize("Models/DefaultMaterial_albedo.dds");
@@ -106,11 +119,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		quadMaterial1.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
 		DefaultMaterial quadMaterial2(theApp.GetDevice(), theApp.GetCommandList(), &shadowDebug, &theApp);
 		quadMaterial2.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
+		DefaultMaterial quadMaterial3(theApp.GetDevice(), theApp.GetCommandList(), &shadowDebug, &theApp);
+		quadMaterial3.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
+		DefaultMaterial quadMaterial4(theApp.GetDevice(), theApp.GetCommandList(), &shadowDebug, &theApp);
+		quadMaterial4.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
 
 		SSQuad ssQuad1(&ssQuadMesh1, &quadMaterial1, 0);
 		SSQuad ssQuad2(&ssQuadMesh2, &quadMaterial2, 1);
+		SSQuad ssQuad3(&ssQuadMesh3, &quadMaterial3, 2);
+		SSQuad ssQuad4(&ssQuadMesh4, &quadMaterial4, 3);
 
-		StaticObject floor1(&floorMesh, &floorMaterial, &theApp, DirectX::XMMatrixAffineTransformation({ 0.12f, 0.12f, 0.12f }, {}, DirectX::XMQuaternionIdentity(), {0, -1, 0}));
+		StaticObject floor1(&floorMesh, &floorMaterial1, &theApp, DirectX::XMMatrixAffineTransformation({ 1.0f, 1.0f, 1.0f }, {}, DirectX::XMQuaternionIdentity(), {-10, -1, +15}));
+		StaticObject floor2(&floorMesh, &floorMaterial2, &theApp, DirectX::XMMatrixAffineTransformation({ 1.0f, 1.0f, 1.0f }, {}, DirectX::XMQuaternionIdentity(), {-10, -1, -15}));
+		StaticObject floor3(&floorMesh, &floorMaterial3, &theApp, DirectX::XMMatrixAffineTransformation({ 1.0f, 1.0f, 1.0f }, {}, DirectX::XMQuaternionIdentity(), {+10, -1, +15}));
+		StaticObject floor4(&floorMesh, &floorMaterial4, &theApp, DirectX::XMMatrixAffineTransformation({ 1.0f, 1.0f, 1.0f }, {}, DirectX::XMQuaternionIdentity(), {+10, -1, -15}));
 
 		KatamariObjectSettings boxSettings{};
 		boxSettings.Position = { -10, 0, 0 };
@@ -149,7 +171,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		theApp.EndCommands();
 
 		theApp.AddComponent(&floor1);
-		//theApp.AddComponent(&grid);
+		theApp.AddComponent(&floor2);
+		theApp.AddComponent(&floor3);
+		theApp.AddComponent(&floor4);
+		//theApp.AddComponent(&gridDebug);
 		theApp.AddComponent(&boxObject);
 		theApp.AddComponent(&vaseObject);
 		theApp.AddComponent(&cakeObject);
@@ -158,6 +183,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		theApp.AddComponent(&player);
 		theApp.AddSSComponent(&ssQuad1);
 		theApp.AddSSComponent(&ssQuad2);
+		theApp.AddSSComponent(&ssQuad3);
+		theApp.AddSSComponent(&ssQuad4);
 
 		MSG msg = { 0 };
 

@@ -2,6 +2,7 @@
 #include "../Common/Constants.h"
 #include "RenderComponent.h"
 #include "../Common/Camera.h"
+#include <iostream>
 
 Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> ShadowMap::ShadowMapsHeap = nullptr;
 
@@ -119,33 +120,46 @@ void ShadowMap::Initialize(D3D12_CPU_DESCRIPTOR_HANDLE dsvStart, int index)
 
 void ShadowMap::Update(Camera camera)
 {
-	DirectX::XMVECTOR lightDir = { 0.57735f, -0.57735f, 0.57735f };
-	DirectX::XMVECTOR lightPos = DirectX::XMVectorMultiplyAdd(camera.GetLook(), { 25,1,25 }, camera.GetPosition());// { 0.57735f * -12, -0.57735f * -12, 0.57735f * -12 };
-
-	DirectX::XMVECTOR targetPos = DirectX::XMVectorAdd(lightPos, lightDir);// { 0, 0, 0 };
+	DirectX::XMVECTOR lightDir = { 0.57735f, -0.57735f, 0.57735f };//{ 0.57735f, -0.57735f, 0.57735f };
+	DirectX::XMVECTOR lightPos = DirectX::XMVectorMultiply(lightDir, { -51, -51, -51 });;// { 0.0f * -51, -0.70710f * -51, 0.70710f * -51 };
+	DirectX::XMVECTOR targetPos = { 0, 0, 0 };
 	DirectX::XMVECTOR lightUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
-	if (mIndex == 1)
-	{
-		lightPos = DirectX::XMVectorMultiplyAdd(camera.GetLook(), { 40,1,40 }, camera.GetPosition());
-		targetPos = DirectX::XMVectorAdd(lightPos, lightDir);
-	}
-
 	DirectX::XMMATRIX lightView = DirectX::XMMatrixLookAtLH(lightPos, targetPos, lightUp);
+	DirectX::XMStoreFloat4x4(&mLightView, lightView);
 
-	DirectX::XMStoreFloat3(&mLightPosW, lightPos);
+	DirectX::XMVECTOR pos;
+	DirectX::XMFLOAT3 minPos;
+	DirectX::XMFLOAT3 maxPos;
+
+	if (mIndex == 0)
+		CalcCascadePos(camera, 1.0f, 15.0f, pos, minPos, maxPos);
+	if (mIndex == 1)
+		CalcCascadePos(camera, 15.0f, 30.0f, pos, minPos, maxPos);
+	if (mIndex == 2)
+		CalcCascadePos(camera, 30.0f, 45.0f, pos, minPos, maxPos);
+	if (mIndex == 3)
+		CalcCascadePos(camera, 45.0f, 60.0f, pos, minPos, maxPos);
+
+	mLightPos = pos;
+	mTargetPos = DirectX::XMVectorMultiplyAdd(lightDir, { 1 ,1, 1 }, pos);
+
+	//DirectX::XMMATRIX lightView = DirectX::XMMatrixLookAtLH(mLightPos, mTargetPos, lightUp);
+	//DirectX::XMStoreFloat4x4(&mLightView, lightView);
+
+	DirectX::XMStoreFloat3(&mLightPosW, mLightPos);
 
 	// Transform bounding sphere to light space.
 	DirectX::XMFLOAT3 sphereCenterLS;
-	DirectX::XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPos, lightView));
+	DirectX::XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(mTargetPos, lightView));
 
 	// Ortho frustum in light space encloses scene.
-	float l = sphereCenterLS.x - 30;
-	float b = sphereCenterLS.y - 30;
-	float n = sphereCenterLS.z - 30;
-	float r = sphereCenterLS.x + 30;
-	float t = sphereCenterLS.y + 30;
-	float f = sphereCenterLS.z + 30;
+	float l = minPos.x;// sphereCenterLS.x - size;
+	float b = minPos.y;// sphereCenterLS.y - size;
+	float n = minPos.z;// sphereCenterLS.z - size;
+	float r = maxPos.x;// sphereCenterLS.x + size;
+	float t = maxPos.y;//sphereCenterLS.y + size;
+	float f = maxPos.z;//sphereCenterLS.z + size + 100;
 
 	mLightNearZ = n;
 	mLightFarZ = f;
@@ -159,7 +173,6 @@ void ShadowMap::Update(Camera camera)
 		0.5f, 0.5f, 0.0f, 1.0f);
 
 	DirectX::XMMATRIX S = lightView * lightProj * T;
-	DirectX::XMStoreFloat4x4(&mLightView, lightView);
 	DirectX::XMStoreFloat4x4(&mLightProj, lightProj);
 	DirectX::XMStoreFloat4x4(&mShadowTransform, S);
 }
@@ -271,4 +284,70 @@ void ShadowMap::BuildResource()
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		&optClear,
 		IID_PPV_ARGS(&mShadowMap)));
+}
+
+void ShadowMap::CalcCascadePos(Camera camera, float nearDist, float farDist, DirectX::XMVECTOR& centerPosOut, DirectX::XMFLOAT3& minPos, DirectX::XMFLOAT3& maxPos)
+{
+	float nx1 = nearDist * tan(camera.GetFovX() / 2.0);
+	float fx1 = farDist * tan(camera.GetFovX() / 2.0);
+	float ny1 = nearDist * tan(camera.GetFovY() / 2.0);
+	float fy1 = farDist * tan(camera.GetFovY() / 2.0);
+
+	DirectX::XMVECTOR fPoses[8] =
+	{
+		{ +nx1, +ny1, nearDist, 1 },
+		{ -nx1, +ny1, nearDist, 1 },
+		{ +nx1, -ny1, nearDist, 1 },
+		{ -nx1, -ny1, nearDist, 1 },
+		{ +fx1, +fy1, farDist,  1 },
+		{ -fx1, +fy1, farDist,  1 },
+		{ +fx1, -fy1, farDist,  1 },
+		{ -fx1, -fy1, farDist,  1 },
+	};
+
+	DirectX::XMMATRIX lightView = DirectX::XMLoadFloat4x4(&mLightView);
+
+	for (size_t i = 0; i < 8; i++)
+	{
+		fPoses[i] = DirectX::XMVector3TransformCoord(fPoses[i], DirectX::XMMatrixInverse(nullptr, camera.GetView()));
+		fPoses[i] = DirectX::XMVector3TransformCoord(fPoses[i], lightView);
+	}
+
+	float minX = FLT_MAX;
+	float minY = FLT_MAX;
+	float minZ = FLT_MAX;
+	float maxX = -FLT_MAX;
+	float maxY = -FLT_MAX;
+	float maxZ = -FLT_MAX;
+
+	for (size_t i = 0; i < 8; i++)
+	{
+		DirectX::XMFLOAT3 pos;
+		DirectX::XMStoreFloat3(&pos, fPoses[i]);
+
+		//float x = DirectX::XMVectorGetX(fPoses[i]);
+		//float y = DirectX::XMVectorGetY(fPoses[i]);
+		//float z = DirectX::XMVectorGetZ(fPoses[i]);
+
+		float x = pos.x;
+		float y = pos.y;
+		float z = pos.z;
+
+		if (x < minX) minX = x;
+		if (x > maxX) maxX = x;
+		if (y < minY) minY = y;
+		if (y > maxY) maxY = y;
+		if (z < minZ) minZ = z;
+		if (z > maxZ) maxZ = z;
+	}
+
+	float xLen = maxX - minX;
+	float yLen = maxY - minY;
+	float zLen = maxZ - minZ;
+
+	DirectX::XMVECTOR centerPos = { minX + xLen / 2.0f, minY + yLen / 2.0f, 0 };
+	centerPosOut = DirectX::XMVector3TransformCoord(centerPos, DirectX::XMMatrixInverse(nullptr, lightView));
+
+	minPos = { minX, minY, minZ };
+	maxPos = { maxX, maxY, maxZ };
 }
