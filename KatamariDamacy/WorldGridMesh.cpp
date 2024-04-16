@@ -15,17 +15,17 @@ void WorldGridMesh::Build()
 
 	for (int i = 0; i <= 20; i++)
 	{
-		vertices.push_back({ DirectX::XMFLOAT3(-10.0f, 0.0f , i / 2.0), DirectX::XMFLOAT4(DirectX::Colors::Gray) });
-		vertices.push_back({ DirectX::XMFLOAT3(10.0f, 0.0f , i / 2.0), DirectX::XMFLOAT4(DirectX::Colors::Gray) });
+		vertices.push_back({ DirectX::XMFLOAT3(-10.0f, 0.0f , i / 2.0), DirectX::XMFLOAT4(DirectX::Colors::Red) });
+		vertices.push_back({ DirectX::XMFLOAT3(10.0f, 0.0f , i / 2.0), DirectX::XMFLOAT4(DirectX::Colors::Red) });
 
-		vertices.push_back({ DirectX::XMFLOAT3(-10.0f, 0.0f , -i / 2.0), DirectX::XMFLOAT4(DirectX::Colors::Gray) });
-		vertices.push_back({ DirectX::XMFLOAT3(10.0f, 0.0f , -i / 2.0), DirectX::XMFLOAT4(DirectX::Colors::Gray) });
+		vertices.push_back({ DirectX::XMFLOAT3(-10.0f, 0.0f , -i / 2.0), DirectX::XMFLOAT4(DirectX::Colors::Red) });
+		vertices.push_back({ DirectX::XMFLOAT3(10.0f, 0.0f , -i / 2.0), DirectX::XMFLOAT4(DirectX::Colors::Red) });
 
-		vertices.push_back({ DirectX::XMFLOAT3(i / 2.0, 0.0f , 10.0f), DirectX::XMFLOAT4(DirectX::Colors::Gray) });
-		vertices.push_back({ DirectX::XMFLOAT3(i / 2.0, 0.0f , -10.0f), DirectX::XMFLOAT4(DirectX::Colors::Gray) });
+		vertices.push_back({ DirectX::XMFLOAT3(i / 2.0, 0.0f , 10.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) });
+		vertices.push_back({ DirectX::XMFLOAT3(i / 2.0, 0.0f , -10.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) });
 
-		vertices.push_back({ DirectX::XMFLOAT3(-i / 2.0, 0.0f , 10.0f), DirectX::XMFLOAT4(DirectX::Colors::Gray) });
-		vertices.push_back({ DirectX::XMFLOAT3(-i / 2.0, 0.0f , -10.0f), DirectX::XMFLOAT4(DirectX::Colors::Gray) });
+		vertices.push_back({ DirectX::XMFLOAT3(-i / 2.0, 0.0f , 10.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) });
+		vertices.push_back({ DirectX::XMFLOAT3(-i / 2.0, 0.0f , -10.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) });
 
 		for (size_t j = 0; j < 8; j++)
 			indices.push_back(index++);
@@ -89,4 +89,9 @@ std::unordered_map<std::string, SubmeshGeometry> WorldGridMesh::GetDrawArgs() co
 UINT WorldGridMesh::GetVertexCount() const
 {
 	return 800;
+}
+
+DirectX::BoundingBox WorldGridMesh::GetBoundingBox() const
+{
+	return DirectX::BoundingBox();
 }

@@ -14,35 +14,26 @@ struct ObjectConstants
 class Shader
 {
 public:
-	Shader(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ID3D12CommandAllocator* directCmdListAlloc, ID3D12CommandQueue* commandQueue);
+	Shader(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 
 	void Initialize();
 	void BuildShadersAndInputLayout();
-	void BuildDescriptorHeap();
-	void BuildConstantBuffers();
 	void BuildRootSignature();
-	void BuildPSO();
 
-	void SetRenderState(ID3D12GraphicsCommandList* commandList);
-	void CbCopyData(int elementIndex, const ObjectConstants& data);
+	D3D12_INPUT_LAYOUT_DESC GetInputLayout() const;
+	ID3D12RootSignature* GetRootSignature() const;
+	D3D12_SHADER_BYTECODE GetVS() const;
+	D3D12_SHADER_BYTECODE GetPS() const;
+	
 private:
 	ID3D12Device* mDevice;
-	ID3D12CommandAllocator* mDirectCmdListAlloc;
-	ID3D12CommandQueue* mCommandQueue;
 	ID3D12GraphicsCommandList* mCommandList;
 	Microsoft::WRL::ComPtr<ID3DBlob> mvsByteCode = nullptr;
 	Microsoft::WRL::ComPtr<ID3DBlob> mpsByteCode = nullptr;
+	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
-	std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> mPSO = nullptr;
 
-	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 	ID3D12InfoQueue* mInfoQueue;
-	std::unique_ptr<Texture> mTexture;
-
-	UINT mCbvSrvDescriptorSize = 0;
-
 };
 
