@@ -73,11 +73,15 @@ float4 PS(VertexOut pin) : SV_Target
 	float dist = length(gEyePosW - pin.PosW);
 	
 	uint mapIndex = 0;
-	if (dist <= 25)
+	if (dist <= gCascadeDistance.r)
 		mapIndex = 0;
-	else
+	else if (dist <= gCascadeDistance.g)
 		mapIndex = 1;
-	
+	else if (dist <= gCascadeDistance.b)
+		mapIndex = 2;
+	else
+		mapIndex = 3;
+		
 	pin.ShadowPosH = mul(pin.PosW2, gShadowTransform[mapIndex]);
 	
     float3 shadowFactor = float3(1.0f, 1.0f, 1.0f);
