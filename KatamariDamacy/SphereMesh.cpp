@@ -14,8 +14,7 @@ void SphereMesh::Build()
 	float radius = 1.0f;
 	std::uint32_t sliceCount = 20;
 	std::uint32_t stackCount = 20;
-	DirectX::XMFLOAT4 Color = DirectX::XMFLOAT4(DirectX::Colors::Green);
-
+	
 	//
 	// Compute the vertices stating at the top pole and moving down the stacks.
 	//
@@ -23,8 +22,8 @@ void SphereMesh::Build()
 	// Poles: note that there will be texture coordinate distortion as there is
 	// not a unique point on the texture map to assign to the pole when mapping
 	// a rectangular texture onto a sphere.
-	Vertex topVertex{ { 0.0f, +radius, 0.0f }, Color };
-	Vertex bottomVertex{ { 0.0f, -radius, 0.0f }, Color };
+	Vertex topVertex{ { 0.0f, +radius, 0.0f }, {} };
+	Vertex bottomVertex{ { 0.0f, -radius, 0.0f }, {} };
 
 	vertices.push_back(topVertex);
 
@@ -47,13 +46,6 @@ void SphereMesh::Build()
 			v.Pos.x = radius * sinf(phi) * cosf(theta);
 			v.Pos.y = radius * cosf(phi);
 			v.Pos.z = radius * sinf(phi) * sinf(theta);
-			v.Color = 
-			{
-				static_cast <float> (rand()) / (static_cast <float> (RAND_MAX)),
-				static_cast <float> (rand()) / (static_cast <float> (RAND_MAX)),
-				static_cast <float> (rand()) / (static_cast <float> (RAND_MAX)),
-				static_cast <float> (rand()) / (static_cast <float> (RAND_MAX)),
-			};
 			vertices.push_back(v);
 		}
 	}

@@ -85,27 +85,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		KatamariObjectSettings boxSettings{};
 		boxSettings.Position = { -10, 0, 0 };
 		boxSettings.Scale = { 0.003f, 0.003f, 0.003f };
-		KatamariObject boxObject(&boxMesh, &boxMaterial, boxSettings);
+		KatamariObject boxObject(&boxMesh, &boxMaterial, boxSettings, &theApp);
 
 		KatamariObjectSettings vaseSettings{};
 		vaseSettings.Position = { 0, 0, 10 };
 		vaseSettings.Scale = { 0.01f, 0.01f, 0.01f };
-		KatamariObject vaseObject(&vaseMesh, &vaseMaterial, vaseSettings);
+		KatamariObject vaseObject(&vaseMesh, &vaseMaterial, vaseSettings, &theApp);
 
 		KatamariObjectSettings cakeSettings{};
 		cakeSettings.Position = { 0, 0, -10 };
 		cakeSettings.Scale = { 0.005f, 0.005f, 0.005f };
-		KatamariObject cakeObject(&cakeMesh, &cakeMaterial, cakeSettings);
+		KatamariObject cakeObject(&cakeMesh, &cakeMaterial, cakeSettings, &theApp);
 
 		KatamariObjectSettings capybaraSettings{};
 		capybaraSettings.Position = { -5, 0, 8 };
 		capybaraSettings.Scale = { 0.5f, 0.5f, 0.5f };
-		KatamariObject capybaraObject(&capybaraMesh, &capybaraMaterial, capybaraSettings);
+		KatamariObject capybaraObject(&capybaraMesh, &capybaraMaterial, capybaraSettings, &theApp);
 
 		KatamariObjectSettings appleSettings{};
 		appleSettings.Position = { 5, 0, -8 };
 		appleSettings.Scale = { 1.5f, 1.5f, 1.5f };
-		KatamariObject appleObject(&appleMesh, &appleMaterial, appleSettings);
+		KatamariObject appleObject(&appleMesh, &appleMaterial, appleSettings, &theApp);
 
 		DefaultMaterial playerMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader);
 		playerMaterial.Initialize("Models/Default-Material_Paint-Layer-1.dds");

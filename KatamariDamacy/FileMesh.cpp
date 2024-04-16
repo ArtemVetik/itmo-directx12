@@ -45,7 +45,8 @@ void FileMesh::Build()
 		v.Pos.y = vertex.y;
 		v.Pos.z = vertex.z;
 
-		v.Color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		auto normal = scene->mMeshes[0]->mNormals[i];
+		v.Normal = { normal.x, normal.y, normal.z };
 
 		auto tex = scene->mMeshes[0]->mTextureCoords[0][i];
 

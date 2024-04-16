@@ -15,27 +15,27 @@ void WorldGridMesh::Build()
 
 	for (int i = 0; i <= 20; i++)
 	{
-		vertices.push_back({ DirectX::XMFLOAT3(-10.0f, 0.0f , i / 2.0), DirectX::XMFLOAT4(DirectX::Colors::Red) });
-		vertices.push_back({ DirectX::XMFLOAT3(10.0f, 0.0f , i / 2.0), DirectX::XMFLOAT4(DirectX::Colors::Red) });
+		vertices.push_back({ DirectX::XMFLOAT3(-10.0f, 0.0f , i / 2.0) });
+		vertices.push_back({ DirectX::XMFLOAT3(10.0f, 0.0f , i / 2.0) });
 
-		vertices.push_back({ DirectX::XMFLOAT3(-10.0f, 0.0f , -i / 2.0), DirectX::XMFLOAT4(DirectX::Colors::Red) });
-		vertices.push_back({ DirectX::XMFLOAT3(10.0f, 0.0f , -i / 2.0), DirectX::XMFLOAT4(DirectX::Colors::Red) });
+		vertices.push_back({ DirectX::XMFLOAT3(-10.0f, 0.0f , -i / 2.0) });
+		vertices.push_back({ DirectX::XMFLOAT3(10.0f, 0.0f , -i / 2.0) });
 
-		vertices.push_back({ DirectX::XMFLOAT3(i / 2.0, 0.0f , 10.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) });
-		vertices.push_back({ DirectX::XMFLOAT3(i / 2.0, 0.0f , -10.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) });
+		vertices.push_back({ DirectX::XMFLOAT3(i / 2.0, 0.0f , 10.0f) });
+		vertices.push_back({ DirectX::XMFLOAT3(i / 2.0, 0.0f , -10.0f) });
 
-		vertices.push_back({ DirectX::XMFLOAT3(-i / 2.0, 0.0f , 10.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) });
-		vertices.push_back({ DirectX::XMFLOAT3(-i / 2.0, 0.0f , -10.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) });
+		vertices.push_back({ DirectX::XMFLOAT3(-i / 2.0, 0.0f , 10.0f) });
+		vertices.push_back({ DirectX::XMFLOAT3(-i / 2.0, 0.0f , -10.0f) });
 
 		for (size_t j = 0; j < 8; j++)
 			indices.push_back(index++);
 	}
-	vertices.push_back({ DirectX::XMFLOAT3(0.0f, 0.01f , 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) });
-	vertices.push_back({ DirectX::XMFLOAT3(1.0f, 0.01f , 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) });
-	vertices.push_back({ DirectX::XMFLOAT3(0.0f, 0.01f , 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Blue) });
-	vertices.push_back({ DirectX::XMFLOAT3(0.0f, 1.01f , 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Blue) });
-	vertices.push_back({ DirectX::XMFLOAT3(0.0f, 0.01f , 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Green) });
-	vertices.push_back({ DirectX::XMFLOAT3(0.0f, 0.01f , 1.0f), DirectX::XMFLOAT4(DirectX::Colors::Green) });
+	vertices.push_back({ DirectX::XMFLOAT3(0.0f, 0.01f , 0.0f) });
+	vertices.push_back({ DirectX::XMFLOAT3(1.0f, 0.01f , 0.0f) });
+	vertices.push_back({ DirectX::XMFLOAT3(0.0f, 0.01f , 0.0f) });
+	vertices.push_back({ DirectX::XMFLOAT3(0.0f, 1.01f , 0.0f) });
+	vertices.push_back({ DirectX::XMFLOAT3(0.0f, 0.01f , 0.0f) });
+	vertices.push_back({ DirectX::XMFLOAT3(0.0f, 0.01f , 1.0f) });
 
 	for (size_t j = 0; j < 6; j++)
 		indices.push_back(index++);

@@ -1,12 +1,13 @@
 #include "KatamariObject.h"
 
-KatamariObject::KatamariObject(Mesh* mesh, DefaultMaterial* material, KatamariObjectSettings settings)
+KatamariObject::KatamariObject(Mesh* mesh, DefaultMaterial* material, KatamariObjectSettings settings, KatamariApp* app)
 {
 	mMesh = mesh;
 	mMaterial = material;
 	mSettings = settings;
 	mPosition = settings.Position;
 	mRotation = settings.Rotation;
+	mApp = app;
 	mParent = nullptr;
 
 	auto meshBox = mesh->GetBoundingBox();
@@ -36,9 +37,22 @@ void KatamariObject::Update(const GameTimer& t, DirectX::XMMATRIX viewProj)
 
 	DirectX::XMMATRIX texTransform = XMLoadFloat4x4(&MathHelper::Identity4x4());
 
-	ObjectConstants objConstants;
-	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixMultiply(viewProj, DirectX::XMMatrixTranspose(transform)));
+	ObjectConstants objConstants{};
+	XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(transform));
+	DirectX::XMStoreFloat4x4(&objConstants.ViewProj, viewProj);
 	XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
+	DirectX::XMStoreFloat3(&objConstants.EyePosW, mApp->GetMainCamera()->GetPosition());
+	objConstants.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
+	objConstants.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
+	objConstants.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
+	objConstants.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
+	objConstants.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
+	objConstants.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
+	objConstants.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
+	objConstants.Lights[3].Position = { 0.0f, 1.0f, 0.0f };
+	objConstants.Lights[3].Strength = { 2.15f, 2.15f, 2.15f };
+	objConstants.Lights[3].FalloffStart = 0.0f;
+	objConstants.Lights[3].FalloffStart = 10.0f;
 
 	mMaterial->CopyData(0, objConstants);
 
