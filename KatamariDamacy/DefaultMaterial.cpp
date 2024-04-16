@@ -71,8 +71,10 @@ void DefaultMaterial::BuildPSO()
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 1;
+	psoDesc.NumRenderTargets = 3;
 	psoDesc.RTVFormats[0] = Constants::mBackBufferFormat;
+	psoDesc.RTVFormats[1] = Constants::mBackBufferFormat;
+	psoDesc.RTVFormats[2] = Constants::mBackBufferFormat;
 	psoDesc.SampleDesc.Count = Constants::m4xMsaaState ? 4 : 1;
 	psoDesc.SampleDesc.Quality = Constants::m4xMsaaState ? (Constants::m4xMsaaQuality - 1) : 0;
 	psoDesc.DSVFormat = Constants::mDepthStencilFormat;

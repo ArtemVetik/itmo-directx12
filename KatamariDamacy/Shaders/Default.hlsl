@@ -30,6 +30,13 @@ struct VertexOut
 	float4x4 ShadowTransform[2]  : TEXCOORD1;
 };
 
+struct ps_output
+{
+	float3 albedo : SV_TARGET0;
+	float4 normal : SV_TARGET1;
+	float4 specgloss : SV_TARGET2;
+};
+
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout = (VertexOut)0.0f;
@@ -53,10 +60,12 @@ VertexOut VS(VertexIn vin)
     return vout;
 }
 
-float4 PS(VertexOut pin) : SV_Target
+ps_output PS(VertexOut pin) : SV_Target
 {
-//	if (pin.Dist < 25) return 1; else if (pin.Dist < 50) return 0.5; else return 0;
-	
+	ps_output output;
+
+	return output;
+
 	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamLinearWrap, pin.TexC) * gDiffuseAlbedo;
 
     // Interpolating normal can unnormalize it, so renormalize it.
@@ -98,7 +107,7 @@ float4 PS(VertexOut pin) : SV_Target
     // Common convention to take alpha from diffuse material.
     litColor.a = diffuseAlbedo.a;
 
-    return litColor;
+    //return litColor;
 }
 
 
