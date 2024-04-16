@@ -43,7 +43,7 @@ protected:
 	virtual void OnUpdate(const GameTimer& gt)=0;
     virtual void OnDraw(const GameTimer& gt)=0;
 
-protected:
+public:
 
 	bool InitDirect3D();
 	void CreateCommandObjects();
@@ -61,7 +61,9 @@ protected:
     void LogAdapterOutputs(IDXGIAdapter* adapter);
     void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
 
-protected:
+public:
+
+    ID3D12InfoQueue* mInfoQueue;
 
     GameWindow* mGameWindow;
 

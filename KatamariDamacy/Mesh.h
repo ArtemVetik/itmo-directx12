@@ -6,6 +6,7 @@ struct Vertex
 {
 	DirectX::XMFLOAT3 Pos;
 	DirectX::XMFLOAT4 Color;
+	DirectX::XMFLOAT2 TexC;
 };
 
 class Mesh

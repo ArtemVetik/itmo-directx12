@@ -4,8 +4,9 @@
 #include "WorldGrid.h"
 #include "WorldGridMesh.h"
 #include "PlanetRenderComponent.h"
-#include "CameraRootController.h"
 #include "SphereMesh.h"
+#include "FileMesh.h"
+#include "CameraRootController.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	PSTR cmdLine, int showCmd)
@@ -14,7 +15,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 #if defined(DEBUG) | defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
-
+	
 	FILE* fp;
 
 	AllocConsole();
@@ -36,28 +37,36 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 
 		WorldGridMesh gridMesh(theApp.GetDevice(), theApp.GetCommandList());
 		theApp.BuildMesh(&gridMesh);
-		Shader gridShader(theApp.GetDevice());
+		Shader gridShader(theApp.GetDevice(), theApp.GetCommandList(), theApp.mDirectCmdListAlloc.Get(), theApp.mCommandQueue.Get());
 		gridShader.Initialize();
+		theApp.FlushCommandQueue();
 		WorldGrid grid(&gridMesh, &gridShader);
-		theApp.AddComponent(&grid);
+		//theApp.AddComponent(&grid);
 
 		SphereMesh sphereMesh(theApp.GetDevice(), theApp.GetCommandList());
 		theApp.BuildMesh(&sphereMesh);
 
-		Shader sunShader(theApp.GetDevice());
+		FileMesh fileMesh(theApp.GetDevice(), theApp.GetCommandList());
+		theApp.BuildMesh(&fileMesh);
+
+		Shader sunShader(theApp.GetDevice(), theApp.GetCommandList(), theApp.mDirectCmdListAlloc.Get(), theApp.mCommandQueue.Get());
 		sunShader.Initialize();
+		theApp.FlushCommandQueue();
+
 		PointPlanetRoot zeroRoot({});
 		PlanetSettings sunSettings;
 		sunSettings.Root = &zeroRoot;
 		sunSettings.RotateRadius = 0.0f;
-		sunSettings.Scale = { 0.6f, 0.6f, 0.6f };
+		sunSettings.Scale = { 0.01f, 0.01f, 0.01f };
 		sunSettings.RotateAroundSpeed = 0.0f;
-		sunSettings.RotateSelfSpeed = 0.4f;
-		PlanetRenderComponent sunPlanet(&sphereMesh, &sunShader, sunSettings);
+		sunSettings.RotateSelfSpeed = 0.0f;
+		PlanetRenderComponent sunPlanet(&fileMesh, &sunShader, sunSettings);
 		theApp.AddComponent(&sunPlanet);
 
-		Shader earthShader(theApp.GetDevice());
+		Shader earthShader(theApp.GetDevice(), theApp.GetCommandList(), theApp.mDirectCmdListAlloc.Get(), theApp.mCommandQueue.Get());
 		earthShader.Initialize();
+		theApp.FlushCommandQueue();
+
 		PlanetSettings earthSettings;
 		earthSettings.Root = &sunPlanet;
 		earthSettings.RotateRadius = 4.0f;
@@ -67,10 +76,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		earthSettings.RotateSelfSpeed = 2.0f;
 		earthSettings.Rotation = DirectX::XMQuaternionRotationRollPitchYaw(0.0f, 0, 0);
 		PlanetRenderComponent earthPlanet(&sphereMesh, &earthShader, earthSettings);
-		theApp.AddComponent(&earthPlanet);
+		//theApp.AddComponent(&earthPlanet);
 
-		Shader moonShader(theApp.GetDevice());
+		Shader moonShader(theApp.GetDevice(), theApp.GetCommandList(), theApp.mDirectCmdListAlloc.Get(), theApp.mCommandQueue.Get());
 		moonShader.Initialize();
+		theApp.FlushCommandQueue();
+
 		PlanetSettings moonSettings;
 		moonSettings.Root = &earthPlanet;
 		moonSettings.RotateRadius = 0.6f;
@@ -79,10 +90,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		moonSettings.RotateSelfSpeed = 2.5f;
 		moonSettings.OrbitAngle = 0.4f;
 		PlanetRenderComponent moonPlanet(&sphereMesh, &moonShader, moonSettings);
-		theApp.AddComponent(&moonPlanet);
+		//theApp.AddComponent(&moonPlanet);
 
-		Shader marsShader(theApp.GetDevice());
+		Shader marsShader(theApp.GetDevice(), theApp.GetCommandList(), theApp.mDirectCmdListAlloc.Get(), theApp.mCommandQueue.Get());
 		marsShader.Initialize();
+		theApp.FlushCommandQueue();
+
 		PlanetSettings marsSettings;
 		marsSettings.Root = &sunPlanet;
 		marsSettings.RotateRadius = 8.0f;
@@ -92,10 +105,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		marsSettings.RotateSelfSpeed = 2.5f;
 		marsSettings.OrbitAngle = 0.2f;
 		PlanetRenderComponent marsPlanet(&sphereMesh, &marsShader, marsSettings);
-		theApp.AddComponent(&marsPlanet);
+		//theApp.AddComponent(&marsPlanet);
 
-		Shader marsMoon1Shader(theApp.GetDevice());
+		Shader marsMoon1Shader(theApp.GetDevice(), theApp.GetCommandList(), theApp.mDirectCmdListAlloc.Get(), theApp.mCommandQueue.Get());
 		marsMoon1Shader.Initialize();
+		theApp.FlushCommandQueue();
+
 		PlanetSettings marsMoon1Settings;
 		marsMoon1Settings.Root = &marsPlanet;
 		marsMoon1Settings.RotateRadius = 0.9f;
@@ -105,10 +120,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		marsMoon1Settings.RotateSelfSpeed = 2.5f;
 		marsMoon1Settings.OrbitAngle = 0.0f;
 		PlanetRenderComponent marsMoon1Planet(&sphereMesh, &marsMoon1Shader, marsMoon1Settings);
-		theApp.AddComponent(&marsMoon1Planet);
+		//theApp.AddComponent(&marsMoon1Planet);
 
-		Shader marsMoon2Shader(theApp.GetDevice());
+		Shader marsMoon2Shader(theApp.GetDevice(), theApp.GetCommandList(), theApp.mDirectCmdListAlloc.Get(), theApp.mCommandQueue.Get());
 		marsMoon2Shader.Initialize();
+		theApp.FlushCommandQueue();
+
 		PlanetSettings marsMoon2Settings;
 		marsMoon2Settings.Root = &marsPlanet;
 		marsMoon2Settings.RotateRadius = 1.3f;
@@ -118,10 +135,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		marsMoon2Settings.RotateSelfSpeed = 2.5f;
 		marsMoon2Settings.OrbitAngle = 0.1f;
 		PlanetRenderComponent marsMoon2Planet(&sphereMesh, &marsMoon2Shader, marsMoon2Settings);
-		theApp.AddComponent(&marsMoon2Planet);
+		//theApp.AddComponent(&marsMoon2Planet);
 
 		CameraRootController cameraRootController(&theApp, { &sunPlanet, &earthPlanet, &moonPlanet, &marsPlanet, &marsMoon1Planet, &marsMoon2Planet });
-		theApp.AddComponent(&cameraRootController);
+		//theApp.AddComponent(&cameraRootController);
 
 		MSG msg = { 0 };
 
