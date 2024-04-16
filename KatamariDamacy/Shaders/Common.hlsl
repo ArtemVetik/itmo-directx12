@@ -23,6 +23,7 @@ cbuffer cbPerObject : register(b0)
 	uint gShadowIndex;
 	float3 gFresnelR0;
 	float  gRoughness;
+	float4 gCascadeDistance;
 	Light gLights[MaxLights];
 };
 
@@ -78,5 +79,5 @@ float CalcShadowFactor(float4 shadowPosH, uint mapIndex)
             shadowPosH.xy + offsets[i], depth).r;
     }
 	
-    return percentLit / 1.0f;
+    return percentLit / 9.0f;
 }

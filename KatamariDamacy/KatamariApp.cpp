@@ -73,10 +73,14 @@ void KatamariApp::InitShadowMap()
 	mShadowShader->Initialize();
 
 	mShadowMaps.push_back(std::make_unique<ShadowMap>(md3dDevice.Get(), mShadowShader, 2048, 2048));
-	mShadowMaps.push_back(std::make_unique<ShadowMap>(md3dDevice.Get(), mShadowShader, 2048, 2048));
+	mShadowMaps.push_back(std::make_unique<ShadowMap>(md3dDevice.Get(), mShadowShader, 1024, 1024));
+	mShadowMaps.push_back(std::make_unique<ShadowMap>(md3dDevice.Get(), mShadowShader, 512, 512));
+	mShadowMaps.push_back(std::make_unique<ShadowMap>(md3dDevice.Get(), mShadowShader, 256, 256));
 
 	mShadowMaps[0]->Initialize(mDsvHeap->GetCPUDescriptorHandleForHeapStart(), 0);
 	mShadowMaps[1]->Initialize(mDsvHeap->GetCPUDescriptorHandleForHeapStart(), 1);
+	mShadowMaps[2]->Initialize(mDsvHeap->GetCPUDescriptorHandleForHeapStart(), 2);
+	mShadowMaps[3]->Initialize(mDsvHeap->GetCPUDescriptorHandleForHeapStart(), 3);
 }
 
 void KatamariApp::AddComponent(RenderComponent* component)

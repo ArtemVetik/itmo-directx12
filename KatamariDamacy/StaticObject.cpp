@@ -20,8 +20,8 @@ void StaticObject::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, std::v
 	ObjectConstants objConstants{};
 	XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(mTransform));
 	DirectX::XMStoreFloat4x4(&objConstants.ViewProj, viewProj);
-	DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform[0], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&shadowConstants[0].ShadowTransform)));
-	DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform[1], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&shadowConstants[1].ShadowTransform)));
+	for (size_t i = 0; i < shadowConstants.size(); i++)
+		DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform[i], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&shadowConstants[i].ShadowTransform)));
 	XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
 	DirectX::XMStoreFloat3(&objConstants.EyePosW, mApp->GetMainCamera()->GetPosition());
 
