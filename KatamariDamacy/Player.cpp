@@ -20,7 +20,7 @@ void Player::Build()
 {
 }
 
-void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj)
+void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, ShadowMapConstants shadowConstants)
 {
 	const float dt = t.DeltaTime();
 
@@ -83,21 +83,17 @@ void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj)
 	ObjectConstants objConstants{};
 	XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(transform));
 	DirectX::XMStoreFloat4x4(&objConstants.ViewProj, viewProj);
+	DirectX::XMMATRIX shadowTransform = DirectX::XMLoadFloat4x4(&shadowConstants.ShadowTransform);
+	DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform, DirectX::XMMatrixTranspose(shadowTransform));
 	XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
 	DirectX::XMStoreFloat3(&objConstants.EyePosW, mCamera->GetPosition());
-	objConstants.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
-	objConstants.Lights[0].Direction = { 0.57735f, -0.57735f, -0.57735f };
-	objConstants.Lights[0].Strength = { 1.8f, 1.8f, 1.8f };
-	objConstants.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
-	objConstants.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
-	objConstants.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
-	objConstants.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
-	objConstants.Lights[3].Position = { 0.0f, 0.0f, 0.0f };
-	objConstants.Lights[3].Strength = { 12.15f, 12.15f, 12.15f };
-	objConstants.Lights[3].FalloffStart = 0.0f;
-	objConstants.Lights[3].FalloffEnd = 10.0f;
 
 	mMaterial->CopyData(0, objConstants);
+
+	XMStoreFloat4x4(&objConstants.ViewProj, shadowConstants.ViewProj);
+	objConstants.EyePosW = shadowConstants.EyePosW;
+
+	mMaterial->CopyData(1, objConstants);
 
 	DirectX::BoundingOrientedBox actualCollision = mCollision;
 	mCollision.Transform(actualCollision, transform);
@@ -127,9 +123,9 @@ void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj)
 	}
 }
 
-void Player::Draw(const GameTimer& t, ID3D12GraphicsCommandList* commandList)
+void Player::Draw(const GameTimer& t, ID3D12GraphicsCommandList* commandList, int cbOffset)
 {
-	mMaterial->SetRenderState();
+	mMaterial->SetRenderState(cbOffset);
 
 	commandList->IASetVertexBuffers(0, 1, &mMesh->GetVertexBufferView());
 	commandList->IASetIndexBuffer(&mMesh->GetIndexBufferView());

@@ -5,9 +5,12 @@
 #include "WorldGrid.h"
 #include "WorldGridMesh.h"
 #include "KatamariObject.h"
+#include "StaticObject.h"
 #include "SphereMesh.h"
 #include "FileMesh.h"
 #include "Player.h"
+#include "SSQuadMesh.h"
+#include "SSQuad.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	PSTR cmdLine, int showCmd)
@@ -38,11 +41,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 
 		theApp.BeginCommands();
 
-		Shader defaultShader(theApp.GetDevice(), theApp.GetCommandList());
+		theApp.InitShadowMap();
+
+		Shader defaultShader(theApp.GetDevice(), theApp.GetCommandList(), L"Shaders\\Default.hlsl");
 		defaultShader.Initialize();
+
+		Shader shadowDebug(theApp.GetDevice(), theApp.GetCommandList(), L"Shaders\\ShadowDebug.hlsl");
+		shadowDebug.Initialize();
 
 		WorldGridMesh gridMesh(theApp.GetDevice(), theApp.GetCommandList());
 		gridMesh.Build();
+
+		FileMesh floorMesh(theApp.GetDevice(), theApp.GetCommandList(), "Models/plane.fbx");
+		floorMesh.Build();
 
 		SphereMesh sphereMesh(theApp.GetDevice(), theApp.GetCommandList());
 		sphereMesh.Build();
@@ -62,25 +73,38 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		FileMesh appleMesh(theApp.GetDevice(), theApp.GetCommandList(), "Models/Apple.fbx");
 		appleMesh.Build();
 
-		DefaultMaterial gridMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader);
+		SSQuadMesh ssQuadMesh(theApp.GetDevice(), theApp.GetCommandList());
+		ssQuadMesh.Build();
+
+		DefaultMaterial floorMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
+		floorMaterial.Initialize("Models/Floortile1Color.dds");
+
+		DefaultMaterial gridMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
 		gridMaterial.Initialize("Models/DefaultMaterial_albedo.dds");
 
 		WorldGrid grid(&gridMesh, &gridMaterial);
 
-		DefaultMaterial boxMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader);
+		DefaultMaterial boxMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
 		boxMaterial.Initialize("Models/DefaultMaterial_albedo.dds");
 
-		DefaultMaterial vaseMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader);
+		DefaultMaterial vaseMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
 		vaseMaterial.Initialize("Models/vase_base_albedo.dds");
 
-		DefaultMaterial cakeMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader);
+		DefaultMaterial cakeMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
 		cakeMaterial.Initialize("Models/Pasha_LP_DefaultMaterial_BaseColor.dds");
 
-		DefaultMaterial capybaraMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader);
+		DefaultMaterial capybaraMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
 		capybaraMaterial.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
 
-		DefaultMaterial appleMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader);
+		DefaultMaterial appleMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
 		appleMaterial.Initialize("Models/Apple_BaseColor.dds");
+
+		DefaultMaterial quadMaterial(theApp.GetDevice(), theApp.GetCommandList(), &shadowDebug, &theApp);
+		quadMaterial.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
+
+		SSQuad ssQuad(&ssQuadMesh, &quadMaterial);
+
+		StaticObject floor1(&floorMesh, &floorMaterial, &theApp, DirectX::XMMatrixAffineTransformation({ 0.12f, 0.12f, 0.12f }, {}, DirectX::XMQuaternionIdentity(), {0, -1, 0}));
 
 		KatamariObjectSettings boxSettings{};
 		boxSettings.Position = { -10, 0, 0 };
@@ -107,7 +131,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		appleSettings.Scale = { 1.5f, 1.5f, 1.5f };
 		KatamariObject appleObject(&appleMesh, &appleMaterial, appleSettings, &theApp);
 
-		DefaultMaterial playerMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader);
+		DefaultMaterial playerMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
 		playerMaterial.Initialize("Models/Default-Material_Paint-Layer-1.dds");
 
 		FileMesh playerMesh(theApp.GetDevice(), theApp.GetCommandList(), "Models/Bolita_fuego_pintada_01.obj");
@@ -118,13 +142,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 
 		theApp.EndCommands();
 
-		theApp.AddComponent(&grid);
+		theApp.AddComponent(&floor1);
+		//theApp.AddComponent(&grid);
 		theApp.AddComponent(&boxObject);
 		theApp.AddComponent(&vaseObject);
 		theApp.AddComponent(&cakeObject);
 		theApp.AddComponent(&capybaraObject);
 		theApp.AddComponent(&appleObject);
 		theApp.AddComponent(&player);
+		theApp.AddSSComponent(&ssQuad);
 
 		MSG msg = { 0 };
 

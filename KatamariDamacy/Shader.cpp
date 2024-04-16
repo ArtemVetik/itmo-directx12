@@ -1,9 +1,10 @@
 #include "Shader.h"
 
-Shader::Shader(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
+Shader::Shader(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::wstring shaderPath)
 {
 	mDevice = device;
 	mCommandList = commandList;
+	mShaderPath = shaderPath;
 }
 
 void Shader::Initialize()
@@ -16,8 +17,8 @@ void Shader::BuildShadersAndInputLayout()
 {
 	HRESULT hr = S_OK;
 
-	mvsByteCode = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
-	mpsByteCode = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_0");
+	mvsByteCode = d3dUtil::CompileShader(mShaderPath, nullptr, "VS", "vs_5_0");
+	mpsByteCode = d3dUtil::CompileShader(mShaderPath, nullptr, "PS", "ps_5_0");
 
 	mInputLayout =
 	{
@@ -27,7 +28,7 @@ void Shader::BuildShadersAndInputLayout()
 	};
 }
 
-std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers()
+std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> GetStaticSamplers()
 {
 	// Applications usually only need a handful of samplers.  So just define them all up front
 	// and keep them available as part of the root signature.  
@@ -78,10 +79,23 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers()
 		0.0f,                              // mipLODBias
 		8);                                // maxAnisotropy
 
+	const CD3DX12_STATIC_SAMPLER_DESC shadow(
+		6, // shaderRegister
+		D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressW
+		0.0f,                               // mipLODBias
+		16,                                 // maxAnisotropy
+		D3D12_COMPARISON_FUNC_LESS_EQUAL,
+		D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK);
+
 	return {
 		pointWrap, pointClamp,
 		linearWrap, linearClamp,
-		anisotropicWrap, anisotropicClamp };
+		anisotropicWrap, anisotropicClamp,
+		shadow
+	};
 }
 
 void Shader::BuildRootSignature()
@@ -93,18 +107,23 @@ void Shader::BuildRootSignature()
 	// thought of as defining the function signature.  
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 
 	// Create a single descriptor table of CBVs.
 	CD3DX12_DESCRIPTOR_RANGE cbvTable;
 	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
+	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+
 	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[1].InitAsConstantBufferView(0);
+	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[2].InitAsConstantBufferView(0);
 
 	auto a = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(2, slotRootParameter, 2, a.data(),
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter, a.size(), a.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer

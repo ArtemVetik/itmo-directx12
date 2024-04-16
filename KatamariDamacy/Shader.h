@@ -5,24 +5,38 @@
 #include "../Common/UploadBuffer.h"
 #include "../Common/Constants.h"
 
+struct ShadowMapConstants
+{
+	DirectX::XMMATRIX ViewProj = {};
+	DirectX::XMFLOAT4X4 ShadowTransform = MathHelper::Identity4x4();
+	DirectX::XMFLOAT3 EyePosW = { 0.0f, 0.0f, 0.0f };
+};
+
 struct ObjectConstants
 {
 	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 ViewProj = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 ShadowTransform = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
 	DirectX::XMFLOAT4 AmbientLight = { 0.6f, 0.6f, 0.6f, 1.0f };
 	DirectX::XMFLOAT3 EyePosW = { 0.0f, 0.0f, 0.0f };
 	float Roughness = 0.2f;
 	DirectX::XMFLOAT3 FresnelR0 = { 0.05f, 0.05f, 0.05f };
 	float gEmpty = 0.0f;
-	Light Lights[MaxLights];
+	Light Lights[MaxLights]
+	{
+		 { { 0.6f, 0.6f, 0.6f }, 1.0f, { 0.57735f, -0.57735f, 0.57735f }, 10.0f, { }, 64.0f },
+		 //{ { 0.3f, 0.3f, 0.3f }, 1.0f, { -0.57735f, -0.57735f, 0.57735f }, 10.0f, { }, 64.0f },
+		 //{ { 0.15f, 0.15f, 0.15f }, 1.0f, { 0.0f, -0.707f, -0.707f }, 10.0f, { }, 64.0f},
+		 //{ { 2.15f, 2.15f, 2.15f }, 1.0f, { 0.0f, -0.707f, -0.707f }, 10.0f, { 0.0f, 1.0f, 0.0f }, 64.0f},
+	};
 };
 
 class Shader
 {
 public:
-	Shader(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
+	Shader(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::wstring shaderPath);
 
 	void Initialize();
 	void BuildShadersAndInputLayout();
@@ -34,6 +48,7 @@ public:
 	D3D12_SHADER_BYTECODE GetPS() const;
 
 private:
+	std::wstring mShaderPath;
 	ID3D12Device* mDevice;
 	ID3D12GraphicsCommandList* mCommandList;
 	Microsoft::WRL::ComPtr<ID3DBlob> mvsByteCode = nullptr;

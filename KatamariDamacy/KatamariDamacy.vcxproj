@@ -156,7 +156,11 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="ShadowMap.cpp" />
     <ClCompile Include="SphereMesh.cpp" />
+    <ClCompile Include="SSQuad.cpp" />
+    <ClCompile Include="SSQuadMesh.cpp" />
+    <ClCompile Include="StaticObject.cpp" />
     <ClCompile Include="WorldGrid.cpp" />
     <ClCompile Include="WorldGridMesh.cpp" />
   </ItemGroup>
@@ -181,7 +185,11 @@
     <ClInclude Include="RenderComponent.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="ShadowMap.h" />
     <ClInclude Include="SphereMesh.h" />
+    <ClInclude Include="SSQuad.h" />
+    <ClInclude Include="SSQuadMesh.h" />
+    <ClInclude Include="StaticObject.h" />
     <ClInclude Include="Transformable.h" />
     <ClInclude Include="WorldGrid.h" />
     <ClInclude Include="WorldGridMesh.h" />
