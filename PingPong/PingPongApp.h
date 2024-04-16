@@ -4,18 +4,20 @@
 #include "../Common/MathHelper.h"
 #include "../Common/UploadBuffer.h"
 #include "RenderComponent.h"
+#include "Mesh.h"
 
-class RenderComponentsApp : public D3DApp
+class PingPongApp : public D3DApp
 {
 public:
-    RenderComponentsApp(GameWindow* gameWindow);
-    RenderComponentsApp(const RenderComponentsApp& rhs) = delete;
-    RenderComponentsApp& operator=(const RenderComponentsApp& rhs) = delete;
-    ~RenderComponentsApp();
+    PingPongApp(GameWindow* gameWindow);
+    PingPongApp(const PingPongApp& rhs) = delete;
+    PingPongApp& operator=(const PingPongApp& rhs) = delete;
+    ~PingPongApp();
 
     virtual bool Initialize()override;
     virtual void Handle(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
 
+    void BuildMesh(Mesh* mesh);
     void AddComponent(RenderComponent* component);
     void RemoveComponent(RenderComponent* component);
 private:
