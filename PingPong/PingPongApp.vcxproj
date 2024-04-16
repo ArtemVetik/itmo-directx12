@@ -21,9 +21,9 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B590A678-E935-4AED-AF1F-3B6D02A4AE95}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>RenderComponents</RootNamespace>
+    <RootNamespace>PingPongApp</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>RenderComponents</ProjectName>
+    <ProjectName>PingPong</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -147,10 +147,14 @@
     <ClCompile Include="..\Common\GameTimer.cpp" />
     <ClCompile Include="..\Common\GameWindow.cpp" />
     <ClCompile Include="..\Common\MathHelper.cpp" />
-    <ClCompile Include="RenderComponentsApp.cpp" />
-    <ClCompile Include="BoxRenderComponent.cpp" />
+    <ClCompile Include="BallRenderComponent.cpp" />
+    <ClCompile Include="CircleMesh.cpp" />
+    <ClCompile Include="EndGame.cpp" />
+    <ClCompile Include="PingPongApp.cpp" />
+    <ClCompile Include="PlayerRenderComponent.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="RectangleMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\Constants.h" />
@@ -162,10 +166,15 @@
     <ClInclude Include="..\Common\GameWindow.h" />
     <ClInclude Include="..\Common\MathHelper.h" />
     <ClInclude Include="..\Common\UploadBuffer.h" />
-    <ClInclude Include="RenderComponentsApp.h" />
-    <ClInclude Include="BoxRenderComponent.h" />
+    <ClInclude Include="BallRenderComponent.h" />
+    <ClInclude Include="CircleMesh.h" />
+    <ClInclude Include="EndGame.h" />
+    <ClInclude Include="Mesh.h" />
+    <ClInclude Include="PingPongApp.h" />
+    <ClInclude Include="PlayerRenderComponent.h" />
     <ClInclude Include="RenderComponent.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="RectangleMesh.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

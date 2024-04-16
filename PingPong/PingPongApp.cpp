@@ -1,14 +1,14 @@
-#include "RenderComponentsApp.h"
+#include "PingPongApp.h"
 
-RenderComponentsApp::RenderComponentsApp(GameWindow* gameWindow)
+PingPongApp::PingPongApp(GameWindow* gameWindow)
 	: D3DApp(gameWindow)
 { }
 
-RenderComponentsApp::~RenderComponentsApp()
+PingPongApp::~PingPongApp()
 {
 }
 
-bool RenderComponentsApp::Initialize()
+bool PingPongApp::Initialize()
 {
     if(!D3DApp::Initialize())
 		return false;
@@ -16,7 +16,7 @@ bool RenderComponentsApp::Initialize()
 	return true;
 }
 
-void RenderComponentsApp::Handle(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+void PingPongApp::Handle(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	D3DApp::Handle(hwnd, msg, wParam, lParam);
 
@@ -24,14 +24,12 @@ void RenderComponentsApp::Handle(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 		component->HandleMessage(hwnd, msg, wParam, lParam);
 }
 
-void RenderComponentsApp::AddComponent(RenderComponent* component)
+void PingPongApp::BuildMesh(Mesh* mesh)
 {
-	mComponents.push_back(component);
-
 	// Reset the command list to prep for initialization commands.
 	ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
-	component->Build();
+	mesh->Build();
 
 	// Execute the initialization commands.
 	ThrowIfFailed(mCommandList->Close());
@@ -42,7 +40,12 @@ void RenderComponentsApp::AddComponent(RenderComponent* component)
 	FlushCommandQueue();
 }
 
-void RenderComponentsApp::RemoveComponent(RenderComponent* component)
+void PingPongApp::AddComponent(RenderComponent* component)
+{
+	mComponents.push_back(component);
+}
+
+void PingPongApp::RemoveComponent(RenderComponent* component)
 {
 	auto it = std::find(mComponents.begin(), mComponents.end(), component);
 	
@@ -50,7 +53,7 @@ void RenderComponentsApp::RemoveComponent(RenderComponent* component)
 		mComponents.erase(it);
 }
 
-void RenderComponentsApp::Resize()
+void PingPongApp::Resize()
 {
 	D3DApp::Resize();
 
@@ -59,13 +62,13 @@ void RenderComponentsApp::Resize()
     XMStoreFloat4x4(&mProj, P);
 }
 
-void RenderComponentsApp::OnUpdate(const GameTimer& gt)
+void PingPongApp::OnUpdate(const GameTimer& gt)
 {
 	for (auto& component : mComponents)
 		component->Update(gt, mProj);
 }
 
-void RenderComponentsApp::OnDraw(const GameTimer& gt)
+void PingPongApp::OnDraw(const GameTimer& gt)
 {
 	// Reuse the memory associated with command recording.
 	// We can only reset when the associated command lists have finished execution on the GPU.
@@ -90,7 +93,7 @@ void RenderComponentsApp::OnDraw(const GameTimer& gt)
 	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
 	for (auto& component : mComponents)
-		component->Draw(gt);
+		component->Draw(gt, mCommandList.Get());
 
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
