@@ -33,7 +33,7 @@ void DefaultMaterial::LoadTexture(std::string texturePath)
 void DefaultMaterial::BuildDescriptorHeap()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc{};
-	cbvHeapDesc.NumDescriptors = 2;
+	cbvHeapDesc.NumDescriptors = 3;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(mDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
@@ -41,7 +41,7 @@ void DefaultMaterial::BuildDescriptorHeap()
 
 void DefaultMaterial::BuildShaderResources()
 {
-	mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(mDevice, 2, true);
+	mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(mDevice, 5, true);
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 
@@ -125,18 +125,20 @@ void DefaultMaterial::SetRenderState(int cbOffset)
 	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 	mCommandList->SetGraphicsRootDescriptorTable(0, tex);
 
-	ID3D12DescriptorHeap* descriptorHeaps2[] = { mApp->GetShadowMap()->Heap().Get() };
+	auto shadowMaps = mApp->GetShadowMap();
+
+	ID3D12DescriptorHeap* descriptorHeaps2[] = { ShadowMap::ShadowMapsHeap.Get() };
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps2), descriptorHeaps2);
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE shad(mApp->GetShadowMap()->Heap()->GetGPUDescriptorHandleForHeapStart());
-	mCommandList->SetGraphicsRootDescriptorTable(1, shad);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE shad(ShadowMap::ShadowMapsHeap->GetGPUDescriptorHandleForHeapStart());
+	mCommandList->SetGraphicsRootDescriptorTable(2, shad);
 
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 	D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = mObjectCB->Resource()->GetGPUVirtualAddress() + cbOffset * objCBByteSize;
 
-	mCommandList->SetGraphicsRootConstantBufferView(2, objCBAddress);
+	mCommandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
 }
 
 void DefaultMaterial::CopyData(int elementIndex, const ObjectConstants& data)

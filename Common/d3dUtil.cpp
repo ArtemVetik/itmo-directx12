@@ -85,6 +85,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> d3dUtil::CreateDefaultBuffer(
 
     return defaultBuffer;
 }
+#include <iostream>
 
 ComPtr<ID3DBlob> d3dUtil::CompileShader(
 	const std::wstring& filename,
@@ -100,12 +101,15 @@ ComPtr<ID3DBlob> d3dUtil::CompileShader(
 	HRESULT hr = S_OK;
 
 	ComPtr<ID3DBlob> byteCode = nullptr;
-	ComPtr<ID3DBlob> errors;
+	ComPtr<ID3DBlob> errors = nullptr;
 	hr = D3DCompileFromFile(filename.c_str(), defines, D3D_COMPILE_STANDARD_FILE_INCLUDE,
 		entrypoint.c_str(), target.c_str(), compileFlags, 0, &byteCode, &errors);
 
-	if(errors != nullptr)
+    if (errors != nullptr)
+    {
+        std::cout << (char*)errors->GetBufferPointer() << "<<<!!!\n";
 		OutputDebugStringA((char*)errors->GetBufferPointer());
+	}
 
 	ThrowIfFailed(hr);
 

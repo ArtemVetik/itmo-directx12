@@ -73,8 +73,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		FileMesh appleMesh(theApp.GetDevice(), theApp.GetCommandList(), "Models/Apple.fbx");
 		appleMesh.Build();
 
-		SSQuadMesh ssQuadMesh(theApp.GetDevice(), theApp.GetCommandList());
-		ssQuadMesh.Build();
+		GeometryGenerator geoGen;
+		SSQuadMesh ssQuadMesh1(theApp.GetDevice(), theApp.GetCommandList(), geoGen.CreateQuad(0.0f, -0.2f, 0.5f, 0.5f, 0.0f));
+		ssQuadMesh1.Build();
+		SSQuadMesh ssQuadMesh2(theApp.GetDevice(), theApp.GetCommandList(), geoGen.CreateQuad(-1.0f, -0.2f, 0.5f, 0.5f, 0.0f));
+		ssQuadMesh2.Build();
 
 		DefaultMaterial floorMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
 		floorMaterial.Initialize("Models/Floortile1Color.dds");
@@ -99,10 +102,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		DefaultMaterial appleMaterial(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
 		appleMaterial.Initialize("Models/Apple_BaseColor.dds");
 
-		DefaultMaterial quadMaterial(theApp.GetDevice(), theApp.GetCommandList(), &shadowDebug, &theApp);
-		quadMaterial.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
+		DefaultMaterial quadMaterial1(theApp.GetDevice(), theApp.GetCommandList(), &shadowDebug, &theApp);
+		quadMaterial1.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
+		DefaultMaterial quadMaterial2(theApp.GetDevice(), theApp.GetCommandList(), &shadowDebug, &theApp);
+		quadMaterial2.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
 
-		SSQuad ssQuad(&ssQuadMesh, &quadMaterial);
+		SSQuad ssQuad1(&ssQuadMesh1, &quadMaterial1, 0);
+		SSQuad ssQuad2(&ssQuadMesh2, &quadMaterial2, 1);
 
 		StaticObject floor1(&floorMesh, &floorMaterial, &theApp, DirectX::XMMatrixAffineTransformation({ 0.12f, 0.12f, 0.12f }, {}, DirectX::XMQuaternionIdentity(), {0, -1, 0}));
 
@@ -150,7 +156,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		theApp.AddComponent(&capybaraObject);
 		theApp.AddComponent(&appleObject);
 		theApp.AddComponent(&player);
-		theApp.AddSSComponent(&ssQuad);
+		theApp.AddSSComponent(&ssQuad1);
+		theApp.AddSSComponent(&ssQuad2);
 
 		MSG msg = { 0 };
 

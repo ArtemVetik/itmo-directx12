@@ -1,16 +1,17 @@
 #include "SSQuadMesh.h"
-#include "../Common/GeometryGenerator.h"
 
-SSQuadMesh::SSQuadMesh(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
+
+SSQuadMesh::SSQuadMesh(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, GeometryGenerator::MeshData meshData)
 {
 	mDevice = device;
 	mCommandList = commandList;
+	mMeshData = meshData;
 }
 
 void SSQuadMesh::Build()
 {
 	GeometryGenerator geoGen;
-	GeometryGenerator::MeshData quad = geoGen.CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
+	GeometryGenerator::MeshData quad = mMeshData;// geoGen.CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
 
 	std::vector<Vertex> vertices;
 	std::vector<uint16_t> indices;

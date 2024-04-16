@@ -1,7 +1,7 @@
 #include "LightingUtil.hlsl"
 
 Texture2D 		gDiffuseMap : register(t0);
-Texture2D gShadowMap : register(t1);
+Texture2D gShadowMap[4] : register(t1);
 
 SamplerState gsamPointWrap        : register(s0);
 SamplerState gsamPointClamp       : register(s1);
@@ -16,14 +16,14 @@ cbuffer cbPerObject : register(b0)
 	float4x4 gWorld;
 	float4x4 gViewProj;
     float4x4 gTexTransform;
-	float4x4 gShadowTransform;
+	float4x4 gShadowTransform[4];
 	float4 gDiffuseAlbedo;
 	float4 gAmbientLight;
 	float3 gEyePosW;
-	float  gRoughness;
+	uint gShadowIndex;
 	float3 gFresnelR0;
-	float gEmpty;
-	Light gLights[MaxLights];	
+	float  gRoughness;
+	Light gLights[MaxLights];
 };
 
 float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, float3 tangentW)
@@ -49,7 +49,7 @@ float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, floa
 // PCF for shadow mapping.
 //---------------------------------------------------------------------------------------
 
-float CalcShadowFactor(float4 shadowPosH)
+float CalcShadowFactor(float4 shadowPosH, uint mapIndex)
 {
     // Complete projection by doing division by w.
     shadowPosH.xyz /= shadowPosH.w;
@@ -58,7 +58,7 @@ float CalcShadowFactor(float4 shadowPosH)
     float depth = shadowPosH.z;
 
     uint width, height, numMips;
-    gShadowMap.GetDimensions(0, width, height, numMips);
+    gShadowMap[mapIndex].GetDimensions(0, width, height, numMips);
 	
     // Texel size.
     float dx = 1.0f / (float)width;
@@ -74,9 +74,9 @@ float CalcShadowFactor(float4 shadowPosH)
     [unroll]
     for(int i = 0; i < 9; ++i)
     {
-        percentLit += gShadowMap.SampleCmpLevelZero(gsamShadow,
+        percentLit += gShadowMap[mapIndex].SampleCmpLevelZero(gsamShadow,
             shadowPosH.xy + offsets[i], depth).r;
     }
 	
-    return percentLit / 9.0f;
+    return percentLit / 1.0f;
 }

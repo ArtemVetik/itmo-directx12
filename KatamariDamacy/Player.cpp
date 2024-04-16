@@ -20,7 +20,7 @@ void Player::Build()
 {
 }
 
-void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, ShadowMapConstants shadowConstants)
+void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, std::vector<ShadowMapConstants> shadowConstants)
 {
 	const float dt = t.DeltaTime();
 
@@ -83,17 +83,20 @@ void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, ShadowMapCon
 	ObjectConstants objConstants{};
 	XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(transform));
 	DirectX::XMStoreFloat4x4(&objConstants.ViewProj, viewProj);
-	DirectX::XMMATRIX shadowTransform = DirectX::XMLoadFloat4x4(&shadowConstants.ShadowTransform);
-	DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform, DirectX::XMMatrixTranspose(shadowTransform));
+	DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform[0], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&shadowConstants[0].ShadowTransform)));
+	DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform[1], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&shadowConstants[1].ShadowTransform)));
 	XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
 	DirectX::XMStoreFloat3(&objConstants.EyePosW, mCamera->GetPosition());
 
 	mMaterial->CopyData(0, objConstants);
 
-	XMStoreFloat4x4(&objConstants.ViewProj, shadowConstants.ViewProj);
-	objConstants.EyePosW = shadowConstants.EyePosW;
+	for (size_t i = 0; i < shadowConstants.size(); i++)
+	{
+		XMStoreFloat4x4(&objConstants.ViewProj, shadowConstants[i].ViewProj);
+		objConstants.EyePosW = shadowConstants[i].EyePosW;
 
-	mMaterial->CopyData(1, objConstants);
+		mMaterial->CopyData(i + 1, objConstants);
+	}
 
 	DirectX::BoundingOrientedBox actualCollision = mCollision;
 	mCollision.Transform(actualCollision, transform);

@@ -1,6 +1,9 @@
 #include "ShadowMap.h"
 #include "../Common/Constants.h"
 #include "RenderComponent.h"
+#include "../Common/Camera.h"
+
+Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> ShadowMap::ShadowMapsHeap = nullptr;
 
 ShadowMap::ShadowMap(ID3D12Device* device, Shader* shader, UINT width, UINT height)
 {
@@ -10,7 +13,7 @@ ShadowMap::ShadowMap(ID3D12Device* device, Shader* shader, UINT width, UINT heig
 	mHeight = height;
 
 	mViewport = { 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f };
-	mScissorRect = { 0, 0, (int)width, (int)height};
+	mScissorRect = { 0, 0, (int)width, (int)height };
 
 	BuildResource();
 }
@@ -40,11 +43,6 @@ CD3DX12_CPU_DESCRIPTOR_HANDLE ShadowMap::Dsv()const
 	return mhCpuDsv;
 }
 
-Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> ShadowMap::Heap() const
-{
-	return mCbvHeap;
-}
-
 D3D12_VIEWPORT ShadowMap::Viewport()const
 {
 	return mViewport;
@@ -61,33 +59,38 @@ ShadowMapConstants ShadowMap::GetConstants()
 	DirectX::XMMATRIX proj = DirectX::XMLoadFloat4x4(&mLightProj);
 
 	DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
-	
-	ShadowMapConstants mShadowPassCB {};
+
+	ShadowMapConstants mShadowPassCB{};
 
 	mShadowPassCB.ViewProj = XMMatrixTranspose(viewProj);
 	mShadowPassCB.EyePosW = mLightPosW;
 	mShadowPassCB.ShadowTransform = mShadowTransform;
-	
+
 	return mShadowPassCB;
 }
 
-void ShadowMap::Initialize(D3D12_CPU_DESCRIPTOR_HANDLE dsvStart)
+void ShadowMap::Initialize(D3D12_CPU_DESCRIPTOR_HANDLE dsvStart, int index)
 {
-	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc{};
-	cbvHeapDesc.NumDescriptors = 1;
-	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	ThrowIfFailed(mDevice->CreateDescriptorHeap(& cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
+	mIndex = index;
+
+	if (ShadowMapsHeap == nullptr)
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc{};
+		cbvHeapDesc.NumDescriptors = 4;
+		cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		ThrowIfFailed(mDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&ShadowMapsHeap)));
+	}
 
 	auto mCbvSrvUavDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	auto mDsvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-	auto a = mCbvHeap->GetCPUDescriptorHandleForHeapStart();
-	auto b = mCbvHeap->GetGPUDescriptorHandleForHeapStart();
+	auto a = ShadowMapsHeap->GetCPUDescriptorHandleForHeapStart();
+	auto b = ShadowMapsHeap->GetGPUDescriptorHandleForHeapStart();
 
-	BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE(a, 0, mCbvSrvUavDescriptorSize),
-		CD3DX12_GPU_DESCRIPTOR_HANDLE(b, 0, mCbvSrvUavDescriptorSize),
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvStart, 1, mDsvDescriptorSize));
+	BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE(a, index, mCbvSrvUavDescriptorSize),
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(b, index, mCbvSrvUavDescriptorSize),
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvStart, index + 1, mDsvDescriptorSize));
 
 	D3D12_RASTERIZER_DESC rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	rasterizer.DepthBias = 100000;
@@ -114,12 +117,20 @@ void ShadowMap::Initialize(D3D12_CPU_DESCRIPTOR_HANDLE dsvStart)
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
 }
 
-void ShadowMap::Update()
+void ShadowMap::Update(Camera camera)
 {
 	DirectX::XMVECTOR lightDir = { 0.57735f, -0.57735f, 0.57735f };
-	DirectX::XMVECTOR lightPos = { 0.57735f * -2, -0.57735f * -2, 0.57735f * -2 };
-	DirectX::XMVECTOR targetPos = { 0, 0, 0 };
+	DirectX::XMVECTOR lightPos = DirectX::XMVectorMultiplyAdd(camera.GetLook(), { 25,1,25 }, camera.GetPosition());// { 0.57735f * -12, -0.57735f * -12, 0.57735f * -12 };
+
+	DirectX::XMVECTOR targetPos = DirectX::XMVectorAdd(lightPos, lightDir);// { 0, 0, 0 };
 	DirectX::XMVECTOR lightUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+	if (mIndex == 1)
+	{
+		lightPos = DirectX::XMVectorMultiplyAdd(camera.GetLook(), { 40,1,40 }, camera.GetPosition());
+		targetPos = DirectX::XMVectorAdd(lightPos, lightDir);
+	}
+
 	DirectX::XMMATRIX lightView = DirectX::XMMatrixLookAtLH(lightPos, targetPos, lightUp);
 
 	DirectX::XMStoreFloat3(&mLightPosW, lightPos);
@@ -176,7 +187,7 @@ void ShadowMap::Draw(const GameTimer& gt, ID3D12GraphicsCommandList* mCommandLis
 	mCommandList->SetPipelineState(mPSO.Get());
 
 	for (auto& component : components)
-		component->Draw(gt, mCommandList, 1);
+		component->Draw(gt, mCommandList, mIndex + 1);
 
 	// Change back to GENERIC_READ so we can read the texture in a shader.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Resource(),
