@@ -63,6 +63,9 @@
     <ClCompile Include="CameraRootController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FileMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PlanetsApp.h">
@@ -131,10 +134,12 @@
     <ClInclude Include="CameraRootController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FileMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Planets3D.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
+    <None Include="packages.config" />
+    <None Include="RetroCar.sdkmesh" />
   </ItemGroup>
 </Project>
