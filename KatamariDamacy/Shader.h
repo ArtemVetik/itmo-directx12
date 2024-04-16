@@ -7,8 +7,16 @@
 
 struct ObjectConstants
 {
-	DirectX::XMFLOAT4X4 WorldViewProj = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 ViewProj = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
+	DirectX::XMFLOAT4 AmbientLight = { 0.6f, 0.6f, 0.6f, 1.0f };
+	DirectX::XMFLOAT3 EyePosW = { 0.0f, 0.0f, 0.0f };
+	float Roughness = 0.2f;
+	DirectX::XMFLOAT3 FresnelR0 = { 0.05f, 0.05f, 0.05f };
+	float gEmpty = 0.0f;
+	Light Lights[MaxLights];
 };
 
 class Shader
@@ -24,7 +32,7 @@ public:
 	ID3D12RootSignature* GetRootSignature() const;
 	D3D12_SHADER_BYTECODE GetVS() const;
 	D3D12_SHADER_BYTECODE GetPS() const;
-	
+
 private:
 	ID3D12Device* mDevice;
 	ID3D12GraphicsCommandList* mCommandList;

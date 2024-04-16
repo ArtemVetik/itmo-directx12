@@ -6,6 +6,7 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include "Transformable.h"
+#include "KatamariApp.h"
 
 struct KatamariObjectSettings
 {
@@ -17,7 +18,7 @@ struct KatamariObjectSettings
 class KatamariObject : public RenderComponent, public Transformable
 {
 public:
-	KatamariObject(Mesh* mesh, DefaultMaterial* material, KatamariObjectSettings settings);
+	KatamariObject(Mesh* mesh, DefaultMaterial* material, KatamariObjectSettings settings, KatamariApp* app);
 	void Build() override;
 	void Update(const GameTimer& t, DirectX::XMMATRIX viewProj) override;
 	void Draw(const GameTimer& t, ID3D12GraphicsCommandList* commandList) override;
@@ -38,6 +39,7 @@ private:
 	Mesh* mMesh;
 	DefaultMaterial* mMaterial;
 	Transformable* mParent;
+	KatamariApp* mApp;
 
 	// Inherited via Transformable
 	DirectX::XMVECTOR GetPosition() override;
