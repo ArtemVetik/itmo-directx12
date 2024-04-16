@@ -1,10 +1,10 @@
 #pragma once
 #include "Mesh.h"
 
-class CircleMesh : public Mesh
+class WorldGridMesh : public Mesh
 {
 public:
-	CircleMesh(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
+	WorldGridMesh(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 	void Build() override;
 	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView() const override;
 	D3D12_INDEX_BUFFER_VIEW GetIndexBufferView() const override;
