@@ -2,12 +2,12 @@
 #include <d3d12.h>
 #include "RenderComponent.h"
 #include "Mesh.h"
-#include "Shader.h"
+#include "DefaultMaterial.h"
 
 class WorldGrid : public RenderComponent
 {
 public:
-	WorldGrid(Mesh* mesh, Shader* shader);
+	WorldGrid(Mesh* mesh, DefaultMaterial* material);
 	void Build() override;
 	void Update(const GameTimer& t, DirectX::XMMATRIX viewProj) override;
 	void Draw(const GameTimer& t, ID3D12GraphicsCommandList* commandList) override;
@@ -15,6 +15,6 @@ public:
 
 private:
 	Mesh* mMesh;
-	Shader* mShader;
+	DefaultMaterial* mMaterial;
 };
 

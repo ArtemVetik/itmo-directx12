@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="PlanetsApp.cpp">
+    <ClCompile Include="KatamariApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
@@ -57,18 +57,21 @@
     <ClCompile Include="SphereMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PlanetRenderComponent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CameraRootController.cpp">
+    <ClCompile Include="KatamariObject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FileMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DefaultMaterial.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="PlanetsApp.h">
+    <ClInclude Include="KatamariApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RenderComponent.h">
@@ -125,21 +128,23 @@
     <ClInclude Include="SphereMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PlanetRenderComponent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PlanetRoot.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CameraRootController.h">
+    <ClInclude Include="KatamariObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FileMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DefaultMaterial.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Transformable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="RetroCar.sdkmesh" />
   </ItemGroup>
 </Project>

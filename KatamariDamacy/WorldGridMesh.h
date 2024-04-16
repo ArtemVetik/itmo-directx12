@@ -15,5 +15,8 @@ private:
 	std::unique_ptr<MeshGeometry> mGeometry = nullptr;
 	ID3D12Device* mDevice;
 	ID3D12GraphicsCommandList* mCommandList;
+
+	// Inherited via Mesh
+	DirectX::BoundingBox GetBoundingBox() const override;
 };
 
