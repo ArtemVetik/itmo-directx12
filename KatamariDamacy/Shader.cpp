@@ -17,8 +17,8 @@ void Shader::BuildShadersAndInputLayout()
 {
 	HRESULT hr = S_OK;
 
-	mvsByteCode = d3dUtil::CompileShader(mShaderPath, nullptr, "VS", "vs_5_0");
-	mpsByteCode = d3dUtil::CompileShader(mShaderPath, nullptr, "PS", "ps_5_0");
+	mvsByteCode = d3dUtil::CompileShader(mShaderPath, nullptr, "VS", "vs_5_1");
+	mpsByteCode = d3dUtil::CompileShader(mShaderPath, nullptr, "PS", "ps_5_1");
 
 	mInputLayout =
 	{
@@ -114,11 +114,11 @@ void Shader::BuildRootSignature()
 	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
-	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 1);
 
 	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[2].InitAsConstantBufferView(0);
+	slotRootParameter[1].InitAsConstantBufferView(0);
+	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable1, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	auto a = GetStaticSamplers();
 

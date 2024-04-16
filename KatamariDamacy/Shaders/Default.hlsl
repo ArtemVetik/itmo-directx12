@@ -24,8 +24,10 @@ struct VertexOut
 	float4 PosH    : SV_POSITION;
 	float4 ShadowPosH : POSITION0;
     float3 PosW    : POSITION1;
+    float4 PosW2    : POSITION2;
     float3 NormalW : NORMAL;
-	float2 TexC  : TEXCOORD;
+	float2 TexC  : TEXCOORD0;
+	float4x4 ShadowTransform[2]  : TEXCOORD1;
 };
 
 VertexOut VS(VertexIn vin)
@@ -35,6 +37,7 @@ VertexOut VS(VertexIn vin)
     // Transform to world space.
     float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
     vout.PosW = posW.xyz;
+    vout.PosW2 = posW;
 
     // Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
     vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
@@ -45,13 +48,15 @@ VertexOut VS(VertexIn vin)
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
     vout.TexC = mul(texC, gTexTransform).xy;
 
-	vout.ShadowPosH = mul(posW, gShadowTransform);
-
+	vout.ShadowPosH = mul(vout.PosW2, gShadowTransform[0]);
+	
     return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
+//	if (pin.Dist < 25) return 1; else if (pin.Dist < 50) return 0.5; else return 0;
+	
 	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamLinearWrap, pin.TexC) * gDiffuseAlbedo;
 
     // Interpolating normal can unnormalize it, so renormalize it.
@@ -64,8 +69,19 @@ float4 PS(VertexOut pin) : SV_Target
     float4 ambient = gAmbientLight*diffuseAlbedo;
 	
 	// Only the first light casts a shadow.
+	
+	float dist = length(gEyePosW - pin.PosW);
+	
+	uint mapIndex = 0;
+	if (dist <= 25)
+		mapIndex = 0;
+	else
+		mapIndex = 1;
+	
+	pin.ShadowPosH = mul(pin.PosW2, gShadowTransform[mapIndex]);
+	
     float3 shadowFactor = float3(1.0f, 1.0f, 1.0f);
-    shadowFactor[0] = CalcShadowFactor(pin.ShadowPosH);
+    shadowFactor[0] = CalcShadowFactor(pin.ShadowPosH, mapIndex);
 	//return float4(shadowFactor, 1);
     const float shininess = 1.0f - gRoughness;
     Material mat = { diffuseAlbedo, gFresnelR0, shininess };

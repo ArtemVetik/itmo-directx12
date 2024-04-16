@@ -72,8 +72,11 @@ void KatamariApp::InitShadowMap()
 	mShadowShader = new Shader(md3dDevice.Get(), mCommandList.Get(), L"Shaders\\Shadows.hlsl");
 	mShadowShader->Initialize();
 
-	mShadowMap = std::make_unique<ShadowMap>(md3dDevice.Get(), mShadowShader, 2048, 2048);
-	mShadowMap->Initialize(mDsvHeap->GetCPUDescriptorHandleForHeapStart());
+	mShadowMaps.push_back(std::make_unique<ShadowMap>(md3dDevice.Get(), mShadowShader, 2048, 2048));
+	mShadowMaps.push_back(std::make_unique<ShadowMap>(md3dDevice.Get(), mShadowShader, 2048, 2048));
+
+	mShadowMaps[0]->Initialize(mDsvHeap->GetCPUDescriptorHandleForHeapStart(), 0);
+	mShadowMaps[1]->Initialize(mDsvHeap->GetCPUDescriptorHandleForHeapStart(), 1);
 }
 
 void KatamariApp::AddComponent(RenderComponent* component)
@@ -99,6 +102,16 @@ Camera* KatamariApp::GetMainCamera()
 	return &mCamera;
 }
 
+std::vector<ShadowMap*> KatamariApp::GetShadowMap()
+{
+	std::vector<ShadowMap*> maps;
+
+	for (auto& m : mShadowMaps)
+		maps.push_back(m.get());
+
+	return maps;
+}
+
 void KatamariApp::Resize()
 {
 	D3DApp::Resize();
@@ -110,14 +123,22 @@ void KatamariApp::OnUpdate(const GameTimer& gt)
 {
 	mCamera.UpdateViewMatrix();
 
-	mShadowMap->Update();
+	for (auto& map : mShadowMaps)
+		map->Update(mCamera);
 
 	DirectX::XMMATRIX view = mCamera.GetView();
 	DirectX::XMMATRIX proj = mCamera.GetProj();
 	DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
 
+	std::vector<ShadowMapConstants> shadowConstants;
+	for (auto& map : mShadowMaps)
+		shadowConstants.push_back(map->GetConstants());
+
 	for (auto& component : mComponents)
-		component->Update(gt, DirectX::XMMatrixTranspose(viewProj), mShadowMap->GetConstants());
+		component->Update(gt, DirectX::XMMatrixTranspose(viewProj), shadowConstants);
+
+	for (auto& component : mSSComponents)
+		component->Update(gt, DirectX::XMMatrixTranspose(viewProj), shadowConstants);
 }
 
 void KatamariApp::OnDraw(const GameTimer& gt)
@@ -130,7 +151,8 @@ void KatamariApp::OnDraw(const GameTimer& gt)
 	// Reusing the command list reuses memory.
 	ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
-	mShadowMap->Draw(gt, mCommandList.Get(), mComponents);
+	for (auto &map : mShadowMaps)
+		map->Draw(gt, mCommandList.Get(), mComponents);
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);

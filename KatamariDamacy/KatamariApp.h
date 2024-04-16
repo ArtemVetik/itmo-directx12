@@ -25,7 +25,7 @@ public:
     void AddSSComponent(RenderComponent* component);
     void RemoveComponent(RenderComponent* component);
     Camera* GetMainCamera();
-    ShadowMap* GetShadowMap() { return mShadowMap.get(); }
+    std::vector<ShadowMap*> GetShadowMap();
 
     ID3D12InfoQueue* infoQueue;
 private:
@@ -38,6 +38,6 @@ private:
     std::vector<RenderComponent*> mSSComponents;
     Camera mCamera;
     POINT mLastMousePos;
-    std::unique_ptr<ShadowMap> mShadowMap;
+    std::vector<std::unique_ptr<ShadowMap>> mShadowMaps;
     Shader* mShadowShader;
 };
