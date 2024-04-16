@@ -21,9 +21,9 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B590A678-E935-4AED-AF1F-3B6D02A4AE95}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>PingPongApp</RootNamespace>
+    <RootNamespace>Planets3D</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>PingPong</ProjectName>
+    <ProjectName>Planets3D</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -141,22 +141,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\Common\Camera.cpp" />
     <ClCompile Include="..\Common\d3dApp.cpp" />
     <ClCompile Include="..\Common\d3dUtil.cpp" />
     <ClCompile Include="..\Common\DDSTextureLoader.cpp" />
     <ClCompile Include="..\Common\GameTimer.cpp" />
     <ClCompile Include="..\Common\GameWindow.cpp" />
+    <ClCompile Include="..\Common\GeometryGenerator.cpp" />
     <ClCompile Include="..\Common\MathHelper.cpp" />
-    <ClCompile Include="BallRenderComponent.cpp" />
-    <ClCompile Include="CircleMesh.cpp" />
-    <ClCompile Include="EndGame.cpp" />
-    <ClCompile Include="PingPongApp.cpp" />
-    <ClCompile Include="PlayerRenderComponent.cpp" />
+    <ClCompile Include="CameraRootController.cpp" />
+    <ClCompile Include="PlanetsApp.cpp" />
+    <ClCompile Include="PlanetRenderComponent.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="RectangleMesh.cpp" />
+    <ClCompile Include="SphereMesh.cpp" />
+    <ClCompile Include="WorldGrid.cpp" />
+    <ClCompile Include="WorldGridMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Common\Camera.h" />
     <ClInclude Include="..\Common\Constants.h" />
     <ClInclude Include="..\Common\d3dApp.h" />
     <ClInclude Include="..\Common\d3dUtil.h" />
@@ -164,17 +167,23 @@
     <ClInclude Include="..\Common\DDSTextureLoader.h" />
     <ClInclude Include="..\Common\GameTimer.h" />
     <ClInclude Include="..\Common\GameWindow.h" />
+    <ClInclude Include="..\Common\GeometryGenerator.h" />
     <ClInclude Include="..\Common\MathHelper.h" />
     <ClInclude Include="..\Common\UploadBuffer.h" />
-    <ClInclude Include="BallRenderComponent.h" />
-    <ClInclude Include="CircleMesh.h" />
-    <ClInclude Include="EndGame.h" />
+    <ClInclude Include="CameraRootController.h" />
     <ClInclude Include="Mesh.h" />
-    <ClInclude Include="PingPongApp.h" />
-    <ClInclude Include="PlayerRenderComponent.h" />
+    <ClInclude Include="PlanetRoot.h" />
+    <ClInclude Include="PlanetsApp.h" />
+    <ClInclude Include="PlanetRenderComponent.h" />
     <ClInclude Include="RenderComponent.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Shader.h" />
-    <ClInclude Include="RectangleMesh.h" />
+    <ClInclude Include="SphereMesh.h" />
+    <ClInclude Include="WorldGrid.h" />
+    <ClInclude Include="WorldGridMesh.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Planets3D.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

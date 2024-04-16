@@ -1,11 +1,10 @@
 #pragma once
 #include "Mesh.h"
-#include "../Common/d3dUtil.h"
 
-class RectangleMesh : public Mesh
+class SphereMesh : public Mesh
 {
 public:
-	RectangleMesh(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
+	SphereMesh(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 	void Build() override;
 	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView() const override;
 	D3D12_INDEX_BUFFER_VIEW GetIndexBufferView() const override;
