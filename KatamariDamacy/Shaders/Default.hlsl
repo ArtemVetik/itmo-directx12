@@ -24,7 +24,7 @@ struct ps_output
 {
 	float4 albedo : SV_TARGET0;
 	float3 normal : SV_TARGET1;
-	float3 worldPos : SV_TARGET2;
+	float4 worldPos : SV_TARGET2;
 };
 
 VertexOut VS(VertexIn vin)
@@ -98,7 +98,7 @@ ps_output PS(VertexOut pin) : SV_Target
 
     // Common convention to take alpha from diffuse material.
     litColor.a = diffuseAlbedo.a;
-	output.worldPos = pin.PosW;
+	output.worldPos = float4(pin.PosW, shadowFactor[0]);
 	return output;
     //return litColor;
 }

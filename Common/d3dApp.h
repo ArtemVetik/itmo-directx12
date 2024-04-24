@@ -40,7 +40,7 @@ public:
     void Draw();
     virtual void Handle(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
 
-	static const int RTVNum = 4;
+	static const int RTVNum = 3;
 	static const int SwapChainCount = 2;
     Microsoft::WRL::ComPtr<ID3D12Resource> mRtvTexture[RTVNum];
 

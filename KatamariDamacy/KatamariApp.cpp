@@ -196,10 +196,13 @@ void KatamariApp::OnDraw(const GameTimer& gt)
 	// Specify the buffers we are going to render to.
 	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, nullptr);
 
+	for (int i = 0; i < RTVNum; i++)
+	{
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mRtvTexture[i].Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
+	}
+
 	// draw ss quad
-	mLightQuad->Draw(mTimer, mCommandList.Get());
-	mLightQuad->Draw(mTimer, mCommandList.Get());
-	mLightQuad->Draw(mTimer, mCommandList.Get());
 	mLightQuad->Draw(mTimer, mCommandList.Get());
 
 	for (auto& component : mSSComponents)

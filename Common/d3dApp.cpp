@@ -48,7 +48,7 @@ bool D3DApp::Initialize()
 {
 	mRtvFormat[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	mRtvFormat[1] = DXGI_FORMAT_R8G8B8A8_SNORM;
-	mRtvFormat[2] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	mRtvFormat[2] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	mRtvFormat[3] = DXGI_FORMAT_R8G8B8A8_SNORM;
 
 	if(!InitDirect3D())
@@ -185,8 +185,8 @@ void D3DApp::Resize()
 	clearVal.Color[3] = mClearColor[3];
 
 	for (int i = 0; i < RTVNum; i++) {
-		resourceDesc.Format = D3DApp::mRtvFormat[i];
-		clearVal.Format = D3DApp::mRtvFormat[i];
+		resourceDesc.Format = mRtvFormat[i];
+		clearVal.Format = mRtvFormat[i];
 		ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &clearVal, IID_PPV_ARGS(mRtvTexture[i].GetAddressOf())));
 	}
 	///

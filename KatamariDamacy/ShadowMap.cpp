@@ -156,10 +156,10 @@ void ShadowMap::Update(Camera camera)
 	// Ortho frustum in light space encloses scene.
 	float l = minPos.x;// sphereCenterLS.x - size;
 	float b = minPos.y;// sphereCenterLS.y - size;
-	float n = minPos.z;// sphereCenterLS.z - size;
+	float n = minPos.z - 10;// sphereCenterLS.z - size;
 	float r = maxPos.x;// sphereCenterLS.x + size;
 	float t = maxPos.y;//sphereCenterLS.y + size;
-	float f = maxPos.z;//sphereCenterLS.z + size + 100;
+	float f = maxPos.z + 10;//sphereCenterLS.z + size + 100;
 
 	mLightNearZ = n;
 	mLightFarZ = f;

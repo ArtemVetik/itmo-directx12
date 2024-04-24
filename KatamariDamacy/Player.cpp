@@ -86,8 +86,6 @@ void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, std::vector<
 		DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform[i], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&shadowConstants[i].ShadowTransform)));
 	XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
 	DirectX::XMStoreFloat3(&objConstants.EyePosW, mCamera->GetPosition());
-	
-	std::cout << DirectX::XMVectorGetX(mPosition) << "<>" << DirectX::XMVectorGetY(mPosition) << "<>" << DirectX::XMVectorGetZ(mPosition) << "\n";
 
 	mMaterial->CopyData(0, objConstants);
 

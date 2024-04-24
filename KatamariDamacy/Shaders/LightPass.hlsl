@@ -26,23 +26,28 @@ VertexOut VS(VertexIn vIn)
 	return vOut;
 }
 
+[earlydepthstencil]
 float4 PS(VertexOut pIn) : SV_TARGET
 {
 	float4 diffuseAlbedo = gAlbedoTexture.Sample(gsamPointWrap, pIn.TexC) * gDiffuseAlbedo;
 	float3 normal = gNormalTexture.Sample(gsamPointWrap, pIn.TexC).rgb;
-	float3 posW = gSpecularGlossTexture.Sample(gsamPointWrap, pIn.TexC).rgb;
+	float4 posW = gSpecularGlossTexture.Sample(gsamPointWrap, pIn.TexC);
 	
-	float3 toEyeW = normalize(gEyePosW - posW);
+	float3 toEyeW = normalize(gEyePosW - posW.rgb);
 	
 	const float shininess = 1.0f - gRoughness;
     Material mat = { diffuseAlbedo, gFresnelR0, shininess };
 	
-	float4 directLight = ComputeLighting(gLights, mat, posW,
-        normal, toEyeW, 2.0f);
+	float4 directLight = ComputeLighting(gLights, mat, posW.rgb,
+        normal, toEyeW, float3(posW.a, 1.0f, 1.0f));
 		
 	float4 ambient = gAmbientLight*diffuseAlbedo;
 	float4 litColor = ambient + directLight;
 	litColor.a = diffuseAlbedo.a;
 	
-	return litColor;
+	float gamma = 2.2;
+    //Gamma correct
+    float4 gColor = float4(pow(litColor.rgb, (1.0/gamma)).rgb, 1);
+	
+	return gColor;
 }
