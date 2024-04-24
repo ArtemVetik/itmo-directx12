@@ -46,6 +46,11 @@ void D3DApp::EndCommands()
 
 bool D3DApp::Initialize()
 {
+	mRtvFormat[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	mRtvFormat[1] = DXGI_FORMAT_R8G8B8A8_SNORM;
+	mRtvFormat[2] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	mRtvFormat[3] = DXGI_FORMAT_R8G8B8A8_SNORM;
+
 	if(!InitDirect3D())
 		return false;
 
@@ -99,12 +104,16 @@ void D3DApp::Handle(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void D3DApp::CreateRtvAndDsvDescriptorHeaps()
 {
     D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
-    rtvHeapDesc.NumDescriptors = SwapChainBufferCount;
+    rtvHeapDesc.NumDescriptors = RTVNum;
     rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	rtvHeapDesc.NodeMask = 0;
     ThrowIfFailed(md3dDevice->CreateDescriptorHeap(
         &rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
+
+	rtvHeapDesc.NumDescriptors = SwapChainCount;
+	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(
+		&rtvHeapDesc, IID_PPV_ARGS(mRtvHeapMain.GetAddressOf())));
 
 
     D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
@@ -128,25 +137,74 @@ void D3DApp::Resize()
     ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
 	// Release the previous resources we will be recreating.
-	for (int i = 0; i < SwapChainBufferCount; ++i)
+	for (int i = 0; i < SwapChainCount; ++i)
 		mSwapChainBuffer[i].Reset();
     mDepthStencilBuffer.Reset();
 	
 	// Resize the swap chain.
     ThrowIfFailed(mSwapChain->ResizeBuffers(
-		SwapChainBufferCount, 
+		SwapChainCount,
 		mGameWindow->GetClientWidth(), mGameWindow->GetClientHeight(),
 		Constants::mBackBufferFormat,
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 
-	mCurrBackBuffer = 0;
- 
+	mCurrentBackBuffer = 0;
+
+	// Update the viewport transform to cover the client area.
+	mScreenViewport.TopLeftX = 0;
+	mScreenViewport.TopLeftY = 0;
+	mScreenViewport.Width = static_cast<float>(mGameWindow->GetClientWidth());
+	mScreenViewport.Height = static_cast<float>(mGameWindow->GetClientHeight());
+	mScreenViewport.MinDepth = 0.0f;
+	mScreenViewport.MaxDepth = 1.0f;
+
+	mScissorRect = { 0, 0, mGameWindow->GetClientWidth(), mGameWindow->GetClientHeight() };
+
+	///
+	CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
+
+	D3D12_RESOURCE_DESC resourceDesc;
+	ZeroMemory(&resourceDesc, sizeof(resourceDesc));
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	resourceDesc.Alignment = 0;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.SampleDesc.Quality = 0;
+	resourceDesc.MipLevels = 1;
+
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.Width = (UINT)mScreenViewport.Width;
+	resourceDesc.Height = (UINT)mScreenViewport.Height;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+	float mClearColor[4] = { 0.0,0.0f,0.0f,1.0f };
+	D3D12_CLEAR_VALUE clearVal;
+	clearVal.Color[0] = mClearColor[0];
+	clearVal.Color[1] = mClearColor[1];
+	clearVal.Color[2] = mClearColor[2];
+	clearVal.Color[3] = mClearColor[3];
+
+	for (int i = 0; i < RTVNum; i++) {
+		resourceDesc.Format = D3DApp::mRtvFormat[i];
+		clearVal.Format = D3DApp::mRtvFormat[i];
+		ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &clearVal, IID_PPV_ARGS(mRtvTexture[i].GetAddressOf())));
+	}
+	///
+
+
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
-	for (UINT i = 0; i < SwapChainBufferCount; i++)
+	for (UINT i = 0; i < RTVNum; i++)
+	{
+		md3dDevice->CreateRenderTargetView(mRtvTexture[i].Get(), nullptr, rtvHeapHandle);
+		rtvHeapHandle.Offset(1, mRtvDescriptorSize);
+	}
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapMainHandle(mRtvHeapMain->GetCPUDescriptorHandleForHeapStart());
+	for (UINT i = 0; i < SwapChainCount; i++)
 	{
 		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-		md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
-		rtvHeapHandle.Offset(1, mRtvDescriptorSize);
+		md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, rtvHeapMainHandle);
+		rtvHeapMainHandle.Offset(1, mRtvDescriptorSize);
 	}
 
     // Create the depth/stencil buffer and view.
@@ -201,16 +259,6 @@ void D3DApp::Resize()
 
 	// Wait until resize is complete.
 	FlushCommandQueue();
-
-	// Update the viewport transform to cover the client area.
-	mScreenViewport.TopLeftX = 0;
-	mScreenViewport.TopLeftY = 0;
-	mScreenViewport.Width    = static_cast<float>(mGameWindow->GetClientWidth());
-	mScreenViewport.Height   = static_cast<float>(mGameWindow->GetClientHeight());
-	mScreenViewport.MinDepth = 0.0f;
-	mScreenViewport.MaxDepth = 1.0f;
-
-    mScissorRect = { 0, 0, mGameWindow->GetClientWidth(), mGameWindow->GetClientHeight() };
 }
 
 bool D3DApp::InitDirect3D()
@@ -319,7 +367,7 @@ void D3DApp::CreateSwapChain()
     sd.SampleDesc.Count = Constants::m4xMsaaState ? 4 : 1;
     sd.SampleDesc.Quality = Constants::m4xMsaaState ? (Constants::m4xMsaaQuality - 1) : 0;
     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    sd.BufferCount = SwapChainBufferCount;
+    sd.BufferCount = RTVNum;
     sd.OutputWindow = mGameWindow->GetMainWnd();
     sd.Windowed = true;
 	sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -358,14 +406,14 @@ void D3DApp::FlushCommandQueue()
 
 ID3D12Resource* D3DApp::CurrentBackBuffer()const
 {
-	return mSwapChainBuffer[mCurrBackBuffer].Get();
+	return mSwapChainBuffer[mCurrentBackBuffer].Get();
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3DApp::CurrentBackBufferView()const
 {
 	return CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		mRtvHeap->GetCPUDescriptorHandleForHeapStart(),
-		mCurrBackBuffer,
+		mRtvHeapMain->GetCPUDescriptorHandleForHeapStart(),
+		mCurrentBackBuffer,
 		mRtvDescriptorSize);
 }
 

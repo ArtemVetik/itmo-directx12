@@ -40,6 +40,11 @@ public:
     void Draw();
     virtual void Handle(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
 
+	static const int RTVNum = 4;
+	static const int SwapChainCount = 2;
+    Microsoft::WRL::ComPtr<ID3D12Resource> mRtvTexture[RTVNum];
+
+    DXGI_FORMAT mRtvFormat[4];
 protected:
     virtual void CreateRtvAndDsvDescriptorHeaps();
 	virtual void Resize(); 
@@ -84,13 +89,13 @@ protected:
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mDirectCmdListAlloc;
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> mCommandList;
 
-	static const int SwapChainBufferCount = 2;
-	int mCurrBackBuffer = 0;
-    Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[SwapChainBufferCount];
+    Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[RTVNum];
     Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;
 
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeapMain;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
+
 
     D3D12_VIEWPORT mScreenViewport; 
     D3D12_RECT mScissorRect;
@@ -98,5 +103,6 @@ protected:
 	UINT mRtvDescriptorSize = 0;
 	UINT mDsvDescriptorSize = 0;
 	UINT mCbvSrvUavDescriptorSize = 0;
+    int mCurrentBackBuffer = 0;
 };
 

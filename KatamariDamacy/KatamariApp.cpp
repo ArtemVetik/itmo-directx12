@@ -21,6 +21,8 @@ bool KatamariApp::Initialize()
 	//infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
 	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, FALSE);
 
+	mSSComponents.clear();
+
 	return true;
 }
 
@@ -93,6 +95,11 @@ void KatamariApp::AddSSComponent(RenderComponent* component)
 	mSSComponents.push_back(component);
 }
 
+void KatamariApp::AddLightQuadComponent(RenderComponent* component)
+{
+	mLightQuad = component;
+}
+
 void KatamariApp::RemoveComponent(RenderComponent* component)
 {
 	auto it = std::find(mComponents.begin(), mComponents.end(), component);
@@ -143,6 +150,8 @@ void KatamariApp::OnUpdate(const GameTimer& gt)
 
 	for (auto& component : mSSComponents)
 		component->Update(gt, DirectX::XMMatrixTranspose(viewProj), shadowConstants);
+
+	mLightQuad->Update(gt, DirectX::XMMatrixTranspose(viewProj), shadowConstants);
 }
 
 void KatamariApp::OnDraw(const GameTimer& gt)
@@ -166,14 +175,32 @@ void KatamariApp::OnDraw(const GameTimer& gt)
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// Clear the back buffer and depth buffer.
-	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
+	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::Black, 0, nullptr);
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-	// Specify the buffers we are going to render to.
-	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDesc(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
+
+	for (int i = 0; i < RTVNum; i++) {
+		mCommandList->ClearRenderTargetView(rtvDesc, DirectX::Colors::Black, 0, nullptr);
+		rtvDesc.Offset(1, mRtvDescriptorSize);
+	}
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDesc2(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
+	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+	mCommandList->OMSetRenderTargets(RTVNum, &rtvDesc2, true, &DepthStencilView());
 
 	for (auto& component : mComponents)
 		component->Draw(gt, mCommandList.Get());
+
+	// Specify the buffers we are going to render to.
+	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, nullptr);
+
+	// draw ss quad
+	mLightQuad->Draw(mTimer, mCommandList.Get());
+	mLightQuad->Draw(mTimer, mCommandList.Get());
+	mLightQuad->Draw(mTimer, mCommandList.Get());
+	mLightQuad->Draw(mTimer, mCommandList.Get());
 
 	for (auto& component : mSSComponents)
 		component->Draw(gt, mCommandList.Get());
@@ -191,7 +218,7 @@ void KatamariApp::OnDraw(const GameTimer& gt)
 
 	// swap the back and front buffers
 	ThrowIfFailed(mSwapChain->Present(0, 0));
-	mCurrBackBuffer = (mCurrBackBuffer + 1) % SwapChainBufferCount;
+	mCurrentBackBuffer = (mCurrentBackBuffer + 1) % SwapChainCount;
 
 	// Wait until frame commands are complete.  This waiting is inefficient and is
 	// done for simplicity.  Later we will show how to organize our rendering code

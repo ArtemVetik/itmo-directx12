@@ -19,7 +19,7 @@ Player::Player(Camera* camera, DefaultMaterial* material, Mesh* mesh, std::vecto
 void Player::Build()
 {
 }
-
+#include <iostream>
 void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, std::vector<ShadowMapConstants> shadowConstants)
 {
 	const float dt = t.DeltaTime();
@@ -77,7 +77,6 @@ void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, std::vector<
 		mRotation,
 		mPosition
 	);
-
 	DirectX::XMMATRIX texTransform = XMLoadFloat4x4(&MathHelper::Identity4x4());
 
 	ObjectConstants objConstants{};
@@ -87,6 +86,8 @@ void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, std::vector<
 		DirectX::XMStoreFloat4x4(&objConstants.ShadowTransform[i], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&shadowConstants[i].ShadowTransform)));
 	XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
 	DirectX::XMStoreFloat3(&objConstants.EyePosW, mCamera->GetPosition());
+	
+	std::cout << DirectX::XMVectorGetX(mPosition) << "<>" << DirectX::XMVectorGetY(mPosition) << "<>" << DirectX::XMVectorGetZ(mPosition) << "\n";
 
 	mMaterial->CopyData(0, objConstants);
 

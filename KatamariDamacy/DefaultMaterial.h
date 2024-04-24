@@ -7,7 +7,7 @@
 class DefaultMaterial
 {
 public:
-    DefaultMaterial(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, Shader* shader, KatamariApp* app);
+    DefaultMaterial(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, Shader* shader, KatamariApp* app, bool isLightPass = false);
     
     void Initialize(std::string texturePath);
     void LoadTexture(std::string texturePath);
@@ -18,6 +18,7 @@ public:
     void CopyData(int elementIndex, const ObjectConstants& data);
     
 private:
+    bool mIsLightPass = false;
     ID3D12Device* mDevice;
     ID3D12GraphicsCommandList* mCommandList;
     Shader* mShader;

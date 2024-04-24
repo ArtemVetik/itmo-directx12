@@ -6,6 +6,18 @@
 
 #define MaxLights 16
 
+#ifndef NUM_DIR_LIGHTS
+    #define NUM_DIR_LIGHTS 1
+#endif
+
+#ifndef NUM_POINT_LIGHTS
+    #define NUM_POINT_LIGHTS 1
+#endif
+
+#ifndef NUM_SPOT_LIGHTS
+    #define NUM_SPOT_LIGHTS 0
+#endif
+
 struct Light
 {
     float3 Strength;
@@ -131,7 +143,7 @@ float3 ComputeSpotLight(Light L, Material mat, float3 pos, float3 normal, float3
     // Scale by spotlight
     float spotFactor = pow(max(dot(-lightVec, L.Direction), 0.0f), L.SpotPower);
     lightStrength *= spotFactor;
-
+	
     return BlinnPhong(lightStrength, lightVec, normal, toEye, mat);
 }
 
@@ -144,10 +156,12 @@ float4 ComputeLighting(Light gLights[MaxLights], Material mat,
     int i = 0;
 
 #if (NUM_DIR_LIGHTS > 0)
+
     for(i = 0; i < NUM_DIR_LIGHTS; ++i)
     {
         result += shadowFactor[i] * ComputeDirectionalLight(gLights[i], mat, normal, toEye);
     }
+	
 #endif
 
 #if (NUM_POINT_LIGHTS > 0)

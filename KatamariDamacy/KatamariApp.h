@@ -23,6 +23,7 @@ public:
 
     void AddComponent(RenderComponent* component);
     void AddSSComponent(RenderComponent* component);
+    void AddLightQuadComponent(RenderComponent* component);
     void RemoveComponent(RenderComponent* component);
     Camera* GetMainCamera();
     std::vector<ShadowMap*> GetShadowMap();
@@ -36,8 +37,11 @@ private:
 private:
     std::vector<RenderComponent*> mComponents;
     std::vector<RenderComponent*> mSSComponents;
+    RenderComponent* mLightQuad;
     Camera mCamera;
     POINT mLastMousePos;
     std::vector<std::unique_ptr<ShadowMap>> mShadowMaps;
     Shader* mShadowShader;
+
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> mLightPso;
 };
