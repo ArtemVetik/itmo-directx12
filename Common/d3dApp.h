@@ -56,6 +56,7 @@ protected:
 	bool InitDirect3D();
 	void CreateCommandObjects();
     void CreateSwapChain();
+    void InitGBuffer();
 
 	void FlushCommandQueue();
 
