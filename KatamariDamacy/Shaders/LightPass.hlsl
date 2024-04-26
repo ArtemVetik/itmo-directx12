@@ -31,12 +31,12 @@ float4 PS(VertexOut pIn) : SV_TARGET
 {
 	float4 diffuseAlbedo = gAlbedoTexture.Sample(gsamPointWrap, pIn.TexC) * gDiffuseAlbedo;
 	float3 normal = gNormalTexture.Sample(gsamPointWrap, pIn.TexC).rgb;
-	float4 posW = gSpecularGlossTexture.Sample(gsamPointWrap, pIn.TexC);
+	float4 posW = gWorldPosTexture.Sample(gsamPointWrap, pIn.TexC);
 	
 	float3 toEyeW = normalize(gEyePosW - posW.rgb);
 	
 	const float shininess = 1.0f - gRoughness;
-    Material mat = { diffuseAlbedo, gFresnelR0, shininess };
+    Material mat = { diffuseAlbedo, float3(1.0f, 1.0f, 1.0f), 0.5 };
 	
 	float4 directLight = ComputeLighting(gLights, mat, posW.rgb,
         normal, toEyeW, float3(posW.a, 1.0f, 1.0f));
@@ -45,9 +45,5 @@ float4 PS(VertexOut pIn) : SV_TARGET
 	float4 litColor = ambient + directLight;
 	litColor.a = diffuseAlbedo.a;
 	
-	float gamma = 2.2;
-    //Gamma correct
-    float4 gColor = float4(pow(litColor.rgb, (1.0/gamma)).rgb, 1);
-	
-	return gColor;
+	return litColor;
 }

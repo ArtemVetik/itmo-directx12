@@ -47,9 +47,9 @@ void D3DApp::EndCommands()
 bool D3DApp::Initialize()
 {
 	mRtvFormat[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	mRtvFormat[1] = DXGI_FORMAT_R8G8B8A8_SNORM;
+	mRtvFormat[1] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	mRtvFormat[2] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	mRtvFormat[3] = DXGI_FORMAT_R8G8B8A8_SNORM;
+	mRtvFormat[3] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
 	if (!InitDirect3D())
 		return false;
@@ -105,7 +105,7 @@ void D3DApp::Handle(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void D3DApp::CreateRtvAndDsvDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
-	rtvHeapDesc.NumDescriptors = RTVNum;
+	rtvHeapDesc.NumDescriptors = RTVNum + 1;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	rtvHeapDesc.NodeMask = 0;
@@ -378,6 +378,9 @@ void D3DApp::InitGBuffer()
 	}
 	///
 
+	mAccumulationBuffer.Reset();
+	ThrowIfFailed(md3dDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &clearVal, IID_PPV_ARGS(mAccumulationBuffer.GetAddressOf())));
+
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
 	for (UINT i = 0; i < RTVNum; i++)
@@ -385,6 +388,8 @@ void D3DApp::InitGBuffer()
 		md3dDevice->CreateRenderTargetView(mRtvTexture[i].Get(), nullptr, rtvHeapHandle);
 		rtvHeapHandle.Offset(1, mRtvDescriptorSize);
 	}
+
+	md3dDevice->CreateRenderTargetView(mAccumulationBuffer.Get(), nullptr, rtvHeapHandle);
 }
 
 void D3DApp::FlushCommandQueue()

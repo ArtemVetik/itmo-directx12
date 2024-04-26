@@ -43,6 +43,7 @@ public:
 	static const int RTVNum = 3;
 	static const int SwapChainCount = 2;
     Microsoft::WRL::ComPtr<ID3D12Resource> mRtvTexture[RTVNum];
+    Microsoft::WRL::ComPtr<ID3D12Resource> mAccumulationBuffer;
 
     DXGI_FORMAT mRtvFormat[4];
 protected:

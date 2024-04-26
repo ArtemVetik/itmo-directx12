@@ -23,7 +23,7 @@ public:
 
     void AddComponent(RenderComponent* component);
     void AddSSComponent(RenderComponent* component);
-    void AddLightQuadComponent(RenderComponent* component);
+    void AddLightQuadComponent(RenderComponent* component, RenderComponent* componentFinal);
     void RemoveComponent(RenderComponent* component);
     Camera* GetMainCamera();
     std::vector<ShadowMap*> GetShadowMap();
@@ -38,6 +38,7 @@ private:
     std::vector<RenderComponent*> mComponents;
     std::vector<RenderComponent*> mSSComponents;
     RenderComponent* mLightQuad;
+    RenderComponent* mLightQuadFinal;
     Camera mCamera;
     POINT mLastMousePos;
     std::vector<std::unique_ptr<ShadowMap>> mShadowMaps;

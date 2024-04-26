@@ -5,8 +5,8 @@ Texture2D gShadowMap[4] : register(t1);
 
 Texture2D gAlbedoTexture : register(t5);
 Texture2D gNormalTexture : register(t6);
-Texture2D gSpecularGlossTexture : register(t7);
-Texture2D gDepth: register(t8);
+Texture2D gWorldPosTexture : register(t7);
+Texture2D gAccumTexture: register(t8);
 
 SamplerState gsamPointWrap        : register(s0);
 SamplerState gsamPointClamp       : register(s1);

@@ -95,9 +95,10 @@ void KatamariApp::AddSSComponent(RenderComponent* component)
 	mSSComponents.push_back(component);
 }
 
-void KatamariApp::AddLightQuadComponent(RenderComponent* component)
+void KatamariApp::AddLightQuadComponent(RenderComponent* component, RenderComponent* componentFinal)
 {
 	mLightQuad = component;
+	mLightQuadFinal = componentFinal;
 }
 
 void KatamariApp::RemoveComponent(RenderComponent* component)
@@ -152,6 +153,7 @@ void KatamariApp::OnUpdate(const GameTimer& gt)
 		component->Update(gt, DirectX::XMMatrixTranspose(viewProj), shadowConstants);
 
 	mLightQuad->Update(gt, DirectX::XMMatrixTranspose(viewProj), shadowConstants);
+	mLightQuadFinal->Update(gt, DirectX::XMMatrixTranspose(viewProj), shadowConstants);
 }
 
 void KatamariApp::OnDraw(const GameTimer& gt)
@@ -194,7 +196,12 @@ void KatamariApp::OnDraw(const GameTimer& gt)
 		component->Draw(gt, mCommandList.Get());
 
 	// Specify the buffers we are going to render to.
-	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, nullptr);
+	auto accBuf = CD3DX12_CPU_DESCRIPTOR_HANDLE(
+		mRtvHeap->GetCPUDescriptorHandleForHeapStart(),
+		3,
+		mRtvDescriptorSize);
+
+	mCommandList->OMSetRenderTargets(1, &accBuf, true, nullptr);
 
 	for (int i = 0; i < RTVNum; i++)
 	{
@@ -202,9 +209,16 @@ void KatamariApp::OnDraw(const GameTimer& gt)
 			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
 	}
 
+	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mAccumulationBuffer.Get(),
+		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ));
+
 	// draw ss quad
 	mLightQuad->Draw(mTimer, mCommandList.Get());
 
+	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, nullptr);
+
+	mLightQuadFinal->Draw(mTimer, mCommandList.Get());
+	
 	for (auto& component : mSSComponents)
 		component->Draw(gt, mCommandList.Get());
 

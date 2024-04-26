@@ -122,7 +122,7 @@ void Shader::BuildRootSignature()
 	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[1].InitAsConstantBufferView(0);
 	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable1, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[3].InitAsDescriptorTable(1, &gBuf, D3D12_SHADER_VISIBILITY_ALL);
+	slotRootParameter[3].InitAsDescriptorTable(1, &gBuf, D3D12_SHADER_VISIBILITY_ALL);\
 
 	auto a = GetStaticSamplers();
 

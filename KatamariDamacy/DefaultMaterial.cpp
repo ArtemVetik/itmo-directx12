@@ -73,6 +73,9 @@ void DefaultMaterial::BuildShaderResources()
 		descSRV.Format = mApp->mRtvFormat[i];
 		mDevice->CreateShaderResourceView(mApp->mRtvTexture[i].Get(), &descSRV, hDescriptor);
 	}
+
+	hDescriptor.Offset(1, ofS);
+	mDevice->CreateShaderResourceView(mApp->mAccumulationBuffer.Get(), &descSRV, hDescriptor);
 }
 #include <iostream>
 void DefaultMaterial::BuildPSO()
@@ -94,7 +97,7 @@ void DefaultMaterial::BuildPSO()
 		psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		psoDesc.NumRenderTargets = 1;
 		//psoDesc.RTVFormats[0] = mApp->mRtvFormat[0];
-		psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 		psoDesc.SampleDesc.Count = 1;
 
 	}
