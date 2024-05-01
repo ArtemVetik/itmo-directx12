@@ -36,7 +36,7 @@ float4 PS(VertexOut pIn) : SV_TARGET
 	float3 toEyeW = normalize(gEyePosW - posW.rgb);
 	
 	const float shininess = 1.0f - gRoughness;
-    Material mat = { diffuseAlbedo, float3(1.0f, 1.0f, 1.0f), 0.5 };
+    Material mat = { diffuseAlbedo, gFresnelR0, shininess };
 	
 	float4 directLight = ComputeLighting(gLights, mat, posW.rgb,
         normal, toEyeW, float3(posW.a, 1.0f, 1.0f));

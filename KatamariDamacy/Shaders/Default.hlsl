@@ -54,7 +54,7 @@ ps_output PS(VertexOut pin) : SV_Target
 {
 	ps_output output;
 	
-	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamLinearWrap, pin.TexC);
+	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamLinearWrap, pin.TexC) * gDiffuseAlbedo;
 
 	output.albedo = diffuseAlbedo;
 
@@ -91,13 +91,13 @@ ps_output PS(VertexOut pin) : SV_Target
     const float shininess = 1.0f - gRoughness;
     Material mat = { diffuseAlbedo, gFresnelR0, shininess };
  
-    //float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
-    //    pin.NormalW, toEyeW, shadowFactor);
+    float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
+        pin.NormalW, toEyeW, shadowFactor);
 
-    // float4 litColor = ambient + directLight;
+    float4 litColor = ambient + directLight;
 
     // Common convention to take alpha from diffuse material.
-    //litColor.a = diffuseAlbedo.a;
+    litColor.a = diffuseAlbedo.a;
 	output.worldPos = float4(pin.PosW, shadowFactor[0]);
 	return output;
     //return litColor;

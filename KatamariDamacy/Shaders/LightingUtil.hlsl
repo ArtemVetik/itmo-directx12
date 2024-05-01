@@ -81,7 +81,7 @@ float3 ComputeDirectionalLight(Light L, Material mat, float3 normal, float3 toEy
     // Scale light down by Lambert's cosine law.
     float ndotl = max(dot(lightVec, normal), 0.0f);
     float3 lightStrength = L.Strength * ndotl;
-	
+
     return BlinnPhong(lightStrength, lightVec, normal, toEye, mat);
 }
 
@@ -154,10 +154,12 @@ float4 ComputeLighting(Light gLights[MaxLights], Material mat,
     float3 result = 0.0f;
 	
     int i = 0;
+	float lc = 0.0f;
 #if (NUM_DIR_LIGHTS > 0)
 
     for(i = 0; i < NUM_DIR_LIGHTS; ++i)
     {
+		lc += max(dot(-gLights[i].Direction, normal), 0.0f);
         result += shadowFactor[i] * ComputeDirectionalLight(gLights[i], mat, normal, toEye);
     }
 	
@@ -166,6 +168,7 @@ float4 ComputeLighting(Light gLights[MaxLights], Material mat,
 #if (NUM_POINT_LIGHTS > 0)
     for(i = NUM_DIR_LIGHTS; i < NUM_DIR_LIGHTS+NUM_POINT_LIGHTS; ++i)
     {
+		lc += max(dot(-gLights[i].Direction, normal), 0.0f);
         result += ComputePointLight(gLights[i], mat, pos, normal, toEye);
     }
 #endif
