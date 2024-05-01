@@ -19,7 +19,7 @@ Player::Player(Camera* camera, DefaultMaterial* material, Mesh* mesh, std::vecto
 void Player::Build()
 {
 }
-
+#include <iostream>
 void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, std::vector<ShadowMapConstants> shadowConstants)
 {
 	const float dt = t.DeltaTime();
@@ -77,7 +77,6 @@ void Player::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, std::vector<
 		mRotation,
 		mPosition
 	);
-
 	DirectX::XMMATRIX texTransform = XMLoadFloat4x4(&MathHelper::Identity4x4());
 
 	ObjectConstants objConstants{};

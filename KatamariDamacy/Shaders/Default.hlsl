@@ -1,14 +1,4 @@
-#ifndef NUM_DIR_LIGHTS
-    #define NUM_DIR_LIGHTS 3
-#endif
 
-#ifndef NUM_POINT_LIGHTS
-    #define NUM_POINT_LIGHTS 1
-#endif
-
-#ifndef NUM_SPOT_LIGHTS
-    #define NUM_SPOT_LIGHTS 0
-#endif
 
 #include "Common.hlsl"
 
@@ -28,6 +18,13 @@ struct VertexOut
     float3 NormalW : NORMAL;
 	float2 TexC  : TEXCOORD0;
 	float4x4 ShadowTransform[2]  : TEXCOORD1;
+};
+
+struct ps_output
+{
+	float4 albedo : SV_TARGET0;
+	float3 normal : SV_TARGET1;
+	float4 worldPos : SV_TARGET2;
 };
 
 VertexOut VS(VertexIn vin)
@@ -53,14 +50,18 @@ VertexOut VS(VertexIn vin)
     return vout;
 }
 
-float4 PS(VertexOut pin) : SV_Target
+ps_output PS(VertexOut pin) : SV_Target
 {
-//	if (pin.Dist < 25) return 1; else if (pin.Dist < 50) return 0.5; else return 0;
+	ps_output output;
 	
 	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamLinearWrap, pin.TexC) * gDiffuseAlbedo;
 
+	output.albedo = diffuseAlbedo;
+
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
+
+	output.normal= pin.NormalW;
 
     // Vector from point being lit to eye. 
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
@@ -97,8 +98,9 @@ float4 PS(VertexOut pin) : SV_Target
 
     // Common convention to take alpha from diffuse material.
     litColor.a = diffuseAlbedo.a;
-
-    return litColor;
+	output.worldPos = float4(pin.PosW, shadowFactor[0]);
+	return output;
+    //return litColor;
 }
 
 

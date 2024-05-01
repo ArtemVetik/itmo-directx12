@@ -49,6 +49,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		Shader shadowDebug(theApp.GetDevice(), theApp.GetCommandList(), L"Shaders\\ShadowDebug.hlsl");
 		shadowDebug.Initialize();
 
+		Shader lightPass(theApp.GetDevice(), theApp.GetCommandList(), L"Shaders\\LightPass.hlsl");
+		lightPass.Initialize();
+
+		Shader lightPassFinal(theApp.GetDevice(), theApp.GetCommandList(), L"Shaders\\LightPassFinal.hlsl");
+		lightPassFinal.Initialize();
+
 		WorldGridMesh gridMesh(theApp.GetDevice(), theApp.GetCommandList());
 		gridMesh.Build();
 
@@ -85,6 +91,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		ssQuadMesh3.Build();
 		SSQuadMesh ssQuadMesh4(theApp.GetDevice(), theApp.GetCommandList(), geoGen.CreateQuad(0.5f, -0.5f, 0.5f, 0.5f, 0.0f));
 		ssQuadMesh4.Build();
+		SSQuadMesh ssQuadMesh5(theApp.GetDevice(), theApp.GetCommandList(), geoGen.CreateQuad(-1.0f, 1.0f, 2.0f, 2.0f, 0.0f));
+		ssQuadMesh5.Build();
 
 		DefaultMaterial floorMaterial1(theApp.GetDevice(), theApp.GetCommandList(), &defaultShader, &theApp);
 		floorMaterial1.Initialize("Models/tile.dds");
@@ -123,11 +131,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		quadMaterial3.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
 		DefaultMaterial quadMaterial4(theApp.GetDevice(), theApp.GetCommandList(), &shadowDebug, &theApp);
 		quadMaterial4.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
+		DefaultMaterial quadMaterial5(theApp.GetDevice(), theApp.GetCommandList(), &lightPass, &theApp, true);
+		quadMaterial5.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
+		DefaultMaterial quadMaterial6(theApp.GetDevice(), theApp.GetCommandList(), &lightPassFinal, &theApp, true);
+		quadMaterial6.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
 
 		SSQuad ssQuad1(&ssQuadMesh1, &quadMaterial1, 0);
 		SSQuad ssQuad2(&ssQuadMesh2, &quadMaterial2, 1);
 		SSQuad ssQuad3(&ssQuadMesh3, &quadMaterial3, 2);
 		SSQuad ssQuad4(&ssQuadMesh4, &quadMaterial4, 3);
+		SSQuad deferredQuad(&ssQuadMesh5, &quadMaterial5, 3);
+		SSQuad deferredQuadFinal(&ssQuadMesh5, &quadMaterial6, 3);
 
 		StaticObject floor1(&floorMesh, &floorMaterial1, &theApp, DirectX::XMMatrixAffineTransformation({ 1.0f, 1.0f, 1.0f }, {}, DirectX::XMQuaternionIdentity(), {-10, -1, +15}));
 		StaticObject floor2(&floorMesh, &floorMaterial2, &theApp, DirectX::XMMatrixAffineTransformation({ 1.0f, 1.0f, 1.0f }, {}, DirectX::XMQuaternionIdentity(), {-10, -1, -15}));
@@ -185,6 +199,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		theApp.AddSSComponent(&ssQuad2);
 		theApp.AddSSComponent(&ssQuad3);
 		theApp.AddSSComponent(&ssQuad4);
+		theApp.AddLightQuadComponent(&deferredQuad, &deferredQuadFinal);
 
 		MSG msg = { 0 };
 

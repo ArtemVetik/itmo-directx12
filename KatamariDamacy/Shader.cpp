@@ -107,7 +107,7 @@ void Shader::BuildRootSignature()
 	// thought of as defining the function signature.  
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
 	// Create a single descriptor table of CBVs.
 	CD3DX12_DESCRIPTOR_RANGE cbvTable;
@@ -116,14 +116,18 @@ void Shader::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
 	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 1);
 
+	CD3DX12_DESCRIPTOR_RANGE gBuf;
+	gBuf.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 5);
+	
 	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[1].InitAsConstantBufferView(0);
 	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable1, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[3].InitAsDescriptorTable(1, &gBuf, D3D12_SHADER_VISIBILITY_ALL);\
 
 	auto a = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter, a.size(), a.data(),
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter, a.size(), a.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
