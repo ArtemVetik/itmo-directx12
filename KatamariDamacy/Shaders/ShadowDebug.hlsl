@@ -35,9 +35,9 @@ float4 PS(VertexOut pin) : SV_Target
 	if (gShadowIndex == 1)
 		return float4(gNormalTexture.Sample(gsamLinearWrap, pin.TexC).rgb, 1.0f);
 	if (gShadowIndex == 2)
-		return float4(gWorldPosTexture.Sample(gsamLinearWrap, pin.TexC).rgb, 1.0f);
+		return float4(gDepthTexture.Sample(gsamPointWrap, pin.TexC).rrr, 1.0f);
 	else
-		return float4(gAccumTexture.Sample(gsamLinearWrap, pin.TexC).rgb, 1.0f);
+		return float4(gAccumTexture.Sample(gsamPointWrap, pin.TexC).rgb, 1.0f);
 }
 
 

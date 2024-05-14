@@ -136,12 +136,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 		DefaultMaterial quadMaterial6(theApp.GetDevice(), theApp.GetCommandList(), &lightPassFinal, &theApp, true);
 		quadMaterial6.Initialize("Models/4k_Capybara_V1_Diffuse.dds");
 
-		SSQuad ssQuad1(&ssQuadMesh1, &quadMaterial1, 0);
-		SSQuad ssQuad2(&ssQuadMesh2, &quadMaterial2, 1);
-		SSQuad ssQuad3(&ssQuadMesh3, &quadMaterial3, 2);
-		SSQuad ssQuad4(&ssQuadMesh4, &quadMaterial4, 3);
-		SSQuad deferredQuad(&ssQuadMesh5, &quadMaterial5, 3);
-		SSQuad deferredQuadFinal(&ssQuadMesh5, &quadMaterial6, 3);
+		SSQuad ssQuad1(&ssQuadMesh1, &quadMaterial1, 0, theApp.GetMainCamera());
+		SSQuad ssQuad2(&ssQuadMesh2, &quadMaterial2, 1, theApp.GetMainCamera());
+		SSQuad ssQuad3(&ssQuadMesh3, &quadMaterial3, 2, theApp.GetMainCamera());
+		SSQuad ssQuad4(&ssQuadMesh4, &quadMaterial4, 3, theApp.GetMainCamera());
+		SSQuad deferredQuad(&ssQuadMesh5, &quadMaterial5, 3, theApp.GetMainCamera());
+		SSQuad deferredQuadFinal(&ssQuadMesh5, &quadMaterial6, 3, theApp.GetMainCamera());
 
 		StaticObject floor1(&floorMesh, &floorMaterial1, &theApp, DirectX::XMMatrixAffineTransformation({ 1.0f, 1.0f, 1.0f }, {}, DirectX::XMQuaternionIdentity(), {-10, -1, +15}));
 		StaticObject floor2(&floorMesh, &floorMaterial2, &theApp, DirectX::XMMatrixAffineTransformation({ 1.0f, 1.0f, 1.0f }, {}, DirectX::XMQuaternionIdentity(), {-10, -1, -15}));

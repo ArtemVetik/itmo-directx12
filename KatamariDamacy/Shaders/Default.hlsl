@@ -23,8 +23,7 @@ struct VertexOut
 struct ps_output
 {
 	float4 albedo : SV_TARGET0;
-	float3 normal : SV_TARGET1;
-	float4 worldPos : SV_TARGET2;
+	float4 normal : SV_TARGET1;
 };
 
 VertexOut VS(VertexIn vin)
@@ -61,8 +60,6 @@ ps_output PS(VertexOut pin) : SV_Target
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
 
-	output.normal= pin.NormalW;
-
     // Vector from point being lit to eye. 
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
@@ -98,9 +95,10 @@ ps_output PS(VertexOut pin) : SV_Target
 
     // Common convention to take alpha from diffuse material.
     litColor.a = diffuseAlbedo.a;
-	output.worldPos = float4(pin.PosW, shadowFactor[0]);
+	
+	output.normal = float4(pin.NormalW, shadowFactor[0]);
+	
 	return output;
-    //return litColor;
 }
 
 

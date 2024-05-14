@@ -128,7 +128,7 @@ void KatamariApp::Resize()
 {
 	D3DApp::Resize();
 
-	mCamera.SetLens(0.25f * MathHelper::Pi, mGameWindow->GetAspectRatio(), 0.1f, 1000.0f);
+	mCamera.SetLens(0.25f * MathHelper::Pi, mGameWindow->GetAspectRatio(), 5.0f, 1000.0f);
 }
 
 void KatamariApp::OnUpdate(const GameTimer& gt)
@@ -176,6 +176,9 @@ void KatamariApp::OnDraw(const GameTimer& gt)
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
+	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.Get(),
+		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+
 	// Clear the back buffer and depth buffer.
 	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::Black, 0, nullptr);
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
@@ -219,6 +222,9 @@ void KatamariApp::OnDraw(const GameTimer& gt)
 
 	mLightQuadFinal->Draw(mTimer, mCommandList.Get());
 	
+	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.Get(),
+		D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ));
+
 	for (auto& component : mSSComponents)
 		component->Draw(gt, mCommandList.Get());
 

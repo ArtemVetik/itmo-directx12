@@ -7,6 +7,7 @@ Texture2D gAlbedoTexture : register(t5);
 Texture2D gNormalTexture : register(t6);
 Texture2D gWorldPosTexture : register(t7);
 Texture2D gAccumTexture: register(t8);
+Texture2D gDepthTexture: register(t9);
 
 SamplerState gsamPointWrap        : register(s0);
 SamplerState gsamPointClamp       : register(s1);
@@ -20,12 +21,16 @@ cbuffer cbPerObject : register(b0)
 {
 	float4x4 gWorld;
 	float4x4 gViewProj;
+	float4x4 gViewInv;
+	float4x4 gProjInv;
     float4x4 gTexTransform;
 	float4x4 gShadowTransform[4];
 	float4 gDiffuseAlbedo;
 	float4 gAmbientLight;
 	float3 gEyePosW;
 	uint gShadowIndex;
+	float3 gLookDir;
+	uint gSpace0;
 	float3 gFresnelR0;
 	float  gRoughness;
 	float4 gCascadeDistance;

@@ -192,6 +192,12 @@ void DefaultMaterial::SetRenderState(int cbOffset)
 
 	tex.Offset(1, mCbvSrvDescriptorSize);
 	mCommandList->SetGraphicsRootDescriptorTable(3, tex);
+
+	ID3D12DescriptorHeap* descriptorHeaps3[] = { D3DApp::SrvHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps3), descriptorHeaps3);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE depth(D3DApp::SrvHeap->GetGPUDescriptorHandleForHeapStart());
+	mCommandList->SetGraphicsRootDescriptorTable(4, depth);
 }
 
 void DefaultMaterial::CopyData(int elementIndex, const ObjectConstants& data)

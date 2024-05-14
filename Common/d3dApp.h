@@ -46,6 +46,8 @@ public:
     Microsoft::WRL::ComPtr<ID3D12Resource> mAccumulationBuffer;
 
     DXGI_FORMAT mRtvFormat[4];
+
+    static Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> SrvHeap;
 protected:
     virtual void CreateRtvAndDsvDescriptorHeaps();
 	virtual void Resize(); 

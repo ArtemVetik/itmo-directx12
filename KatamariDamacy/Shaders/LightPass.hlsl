@@ -30,8 +30,17 @@ VertexOut VS(VertexIn vIn)
 float4 PS(VertexOut pIn) : SV_TARGET
 {
 	float4 diffuseAlbedo = gAlbedoTexture.Sample(gsamPointWrap, pIn.TexC) * gDiffuseAlbedo;
-	float3 normal = gNormalTexture.Sample(gsamPointWrap, pIn.TexC).rgb;
-	float4 posW = gWorldPosTexture.Sample(gsamPointWrap, pIn.TexC);
+	float4 normal = gNormalTexture.Sample(gsamPointWrap, pIn.TexC);
+	
+	float z = gDepthTexture.Sample(gsamPointWrap, pIn.TexC).r;
+	float4 clipSpacePosition = float4(pIn.TexC * 2 - 1, z, 1);
+	clipSpacePosition.y *= -1.0f;
+	float4 viewSpacePosition = mul(gProjInv, clipSpacePosition);
+	viewSpacePosition /= viewSpacePosition.w;
+	float4 worldSpacePosition = mul(gViewInv, viewSpacePosition);
+	
+	float4 posW = worldSpacePosition;
+	//float4 posW = gWorldPosTexture.Sample(gsamPointWrap, pIn.TexC);
 	
 	float3 toEyeW = normalize(gEyePosW - posW.rgb);
 	
@@ -39,7 +48,7 @@ float4 PS(VertexOut pIn) : SV_TARGET
     Material mat = { diffuseAlbedo, gFresnelR0, shininess };
 	
 	float4 directLight = ComputeLighting(gLights, mat, posW.rgb,
-        normal, toEyeW, float3(posW.a, 1.0f, 1.0f));
+        normal.rgb, toEyeW, float3(normal.a, 1.0f, 1.0f));
 		
 	float4 ambient = gAmbientLight*diffuseAlbedo;
 	float4 litColor = ambient + directLight;

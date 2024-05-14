@@ -7,7 +7,7 @@
 class SSQuad : public RenderComponent
 {
 public:
-	SSQuad(Mesh* mesh, DefaultMaterial* material, int index);
+	SSQuad(Mesh* mesh, DefaultMaterial* material, int index, Camera* camera);
 	void Build() override;
 	void Update(const GameTimer& t, DirectX::XMMATRIX viewProj, std::vector<ShadowMapConstants> shadowConstants) override;
 	void Draw(const GameTimer& t, ID3D12GraphicsCommandList* commandList, int cbOffset) override;
@@ -17,5 +17,6 @@ private:
 	int mIndex;
 	Mesh* mMesh;
 	DefaultMaterial* mMaterial;
+	Camera* mCamera;
 };
 

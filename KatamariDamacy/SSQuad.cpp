@@ -1,11 +1,12 @@
 #include "SSQuad.h"
 #include "../Common/GeometryGenerator.h"
 
-SSQuad::SSQuad(Mesh* mesh, DefaultMaterial* material, int index)
+SSQuad::SSQuad(Mesh* mesh, DefaultMaterial* material, int index, Camera* camera)
 {
 	mMesh = mesh;
 	mMaterial = material;
 	mIndex = index;
+	mCamera = camera;
 }
 
 void SSQuad::Build()
@@ -15,6 +16,11 @@ void SSQuad::Build()
 void SSQuad::Update(const GameTimer& t, DirectX::XMMATRIX viewProj, std::vector<ShadowMapConstants> shadowConstants)
 {
 	ObjectConstants c{};
+	DirectX::XMStoreFloat3(&c.EyePosW, mCamera->GetPosition());
+	DirectX::XMStoreFloat3(&c.LookDir, mCamera->GetLook());
+	DirectX::XMStoreFloat4x4(&c.ViewInv, DirectX::XMMatrixInverse(nullptr, mCamera->GetView()));
+	DirectX::XMStoreFloat4x4(&c.ProjInv, DirectX::XMMatrixInverse(nullptr, mCamera->GetProj()));
+
 	c.ShadowIndex = mIndex;
 	mMaterial->CopyData(0, c);
 	mMaterial->CopyData(1, c);
