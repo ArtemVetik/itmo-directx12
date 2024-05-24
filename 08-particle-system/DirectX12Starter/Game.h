@@ -13,6 +13,39 @@ using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 
+struct RenderItem
+{
+	RenderItem() = default;
+	RenderItem(const RenderItem& rhs) = delete;
+
+	// World matrix of the shape that describes the object's local space
+	// relative to the world space, which defines the position, orientation,
+	// and scale of the object in the world.
+	XMFLOAT4X4 World = MathHelper::Identity4x4();
+
+	XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
+
+	// Dirty flag indicating the object data has changed and we need to update the constant buffer.
+	// Because we have an object cbuffer for each FrameResource, we have to apply the
+	// update to each FrameResource.  Thus, when we modify obect data we should set 
+	// NumFramesDirty = gNumFrameResources so that each frame resource gets the update.
+	int NumFramesDirty = gNumberFrameResources;
+
+	// Index into GPU constant buffer corresponding to the ObjectCB for this render item.
+	UINT ObjCBIndex = -1;
+
+	Material* Mat = nullptr;
+	MeshGeometry* Geo = nullptr;
+
+	// Primitive topology.
+	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	// DrawIndexedInstanced parameters.
+	UINT IndexCount = 0;
+	UINT StartIndexLocation = 0;
+	int BaseVertexLocation = 0;
+};
+
 class Game : public DXCore
 {
 public:
@@ -28,6 +61,8 @@ private:
 	FrameResource* currentFrameResource = nullptr;
 	int currentFrameResourceIndex = 0;
 
+	std::vector<D3D12_INPUT_ELEMENT_DESC> geoInputLayout;
+	ComPtr<ID3D12RootSignature> geoRootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> rootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> particleRootSignature = nullptr;
 	ComPtr<ID3D12CommandSignature> particleCommandSignature = nullptr;
@@ -65,6 +100,9 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<Material>> Materials;
 	std::unordered_map<std::string, std::unique_ptr<Texture>> Textures;
 
+	std::vector<std::unique_ptr<RenderItem>> AllRitems;
+	std::vector<RenderItem*> OpaqueRitems;
+
 	ObjectConstants MainObjectCB;
 	TimeConstants MainTimeCB;
 	ParticleConstants MainParticleCB;
@@ -83,11 +121,14 @@ private:
 
 	void UpdateMainPassCB(const Timer& timer);
 
+	void BuildShapeGeometry();
+	void BuildRenderItems();
 	void BuildUAVs();
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
 	void BuildPSOs();
 	void BuildFrameResources();
+	void PrintInfoMessages();
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 

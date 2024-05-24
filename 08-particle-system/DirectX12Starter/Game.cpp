@@ -43,11 +43,13 @@ bool Game::Initialize()
 		XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f)
 	);
 
+	BuildShapeGeometry();
 	BuildUAVs();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
 	BuildFrameResources();
 	BuildPSOs();
+	BuildRenderItems();
 
 	// execute the initialization commands
 	ThrowIfFailed(CommandList->Close());
@@ -138,10 +140,11 @@ void Game::Draw(const Timer &timer)
 	ThrowIfFailed(CommandList->Reset(currentCommandListAllocator.Get(), PSOs["opaque"].Get()));
 
 	CommandList->SetPipelineState(PSOs["particleEmit"].Get());
-	CommandList->SetComputeRootSignature(particleRootSignature.Get());
-
+	
 	ID3D12DescriptorHeap* descriptorHeaps[] = { UAVHeap.Get() };
 	CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	
+	CommandList->SetComputeRootSignature(particleRootSignature.Get());
 
 	auto objectCB = currentFrameResource->ObjectCB->Resource();
 	CommandList->SetComputeRootConstantBufferView(0, objectCB->GetGPUVirtualAddress());
@@ -201,8 +204,29 @@ void Game::Draw(const Timer &timer)
 	// specify the buffers we are going to render to
 	CommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
-	CommandList->SetPipelineState(PSOs["opaque"].Get());
+	CommandList->SetPipelineState(PSOs["geoOpaque"].Get());
 
+	CommandList->SetGraphicsRootSignature(geoRootSignature.Get());
+	auto geoObjectCB = currentFrameResource->GeoObjectCB->Resource();
+
+	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	for (size_t i = 0; i < OpaqueRitems.size(); ++i)
+	{
+		auto ri = OpaqueRitems[i];
+
+		CommandList->IASetVertexBuffers(0, 1, &ri->Geo->VertexBufferView());
+		CommandList->IASetIndexBuffer(&ri->Geo->IndexBufferView());
+		CommandList->IASetPrimitiveTopology(ri->PrimitiveType);
+
+		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = geoObjectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
+		CommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+
+		CommandList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
+	}
+
+
+	CommandList->SetPipelineState(PSOs["opaque"].Get());
+	
 	CommandList->SetGraphicsRootSignature(rootSignature.Get());
 
 	CommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
@@ -240,7 +264,14 @@ void Game::Draw(const Timer &timer)
 	CommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
 	// wwap the back and front buffers
-	ThrowIfFailed(SwapChain->Present(0, 0));
+	//ThrowIfFailed(SwapChain->Present(0, 0));
+	HRESULT hr = (SwapChain->Present(0, 0));
+	if (hr == DXGI_ERROR_DEVICE_REMOVED)
+	{
+		PrintInfoMessages();
+		throw - 234;
+	}
+
 	currentBackBuffer = (currentBackBuffer + 1) % SwapChainBufferCount;
 
 	// advance the fence value to mark commands up to this fence point
@@ -267,6 +298,31 @@ void Game::UpdateMainPassCB(const Timer &timer)
 	auto currentObjectCB = currentFrameResource->ObjectCB.get();
 	currentObjectCB->CopyData(0, objConstants);
 
+	// Geo Constants
+	{
+		auto currGeoObjectCB = currentFrameResource->GeoObjectCB.get();
+		for (auto& e : AllRitems)
+		{
+			// Only update the cbuffer data if the constants have changed.  
+			// This needs to be tracked per frame resource.
+			//if (e->NumFramesDirty > 0)
+			{
+				XMMATRIX world = XMLoadFloat4x4(&e->World);
+
+				ObjectConstants objConstants;
+				XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
+				XMStoreFloat4x4(&objConstants.View, XMMatrixTranspose(view));
+				XMStoreFloat4x4(&objConstants.Projection, XMMatrixTranspose(projection));
+				objConstants.AspectRatio = (float)screenWidth / screenHeight;
+
+				currGeoObjectCB->CopyData(e->ObjCBIndex, objConstants);
+
+				// Next FrameResource need to be updated too.
+				e->NumFramesDirty--;
+			}
+		}
+	}
+
 	MainTimeCB.DeltaTime = timer.GetDeltaTime();
 	MainTimeCB.TotalTime = timer.GetTotalTime();
 
@@ -282,6 +338,214 @@ void Game::UpdateMainPassCB(const Timer &timer)
 
 	auto currentParticleCB = currentFrameResource->ParticleCB.get();
 	currentParticleCB->CopyData(0, MainParticleCB);
+}
+
+void Game::BuildShapeGeometry()
+{
+	GeometryGenerator geoGen;
+	GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
+	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 30.0f, 60, 40);
+	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
+	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
+
+	//
+	// We are concatenating all the geometry into one big vertex/index buffer.  So
+	// define the regions in the buffer each submesh covers.
+	//
+
+	// Cache the vertex offsets to each object in the concatenated vertex buffer.
+	UINT boxVertexOffset = 0;
+	UINT gridVertexOffset = (UINT)box.Vertices.size();
+	UINT sphereVertexOffset = gridVertexOffset + (UINT)grid.Vertices.size();
+	UINT cylinderVertexOffset = sphereVertexOffset + (UINT)sphere.Vertices.size();
+
+	// Cache the starting index for each object in the concatenated index buffer.
+	UINT boxIndexOffset = 0;
+	UINT gridIndexOffset = (UINT)box.Indices32.size();
+	UINT sphereIndexOffset = gridIndexOffset + (UINT)grid.Indices32.size();
+	UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
+
+	SubmeshGeometry boxSubmesh;
+	boxSubmesh.IndexCount = (UINT)box.Indices32.size();
+	boxSubmesh.StartIndexLocation = boxIndexOffset;
+	boxSubmesh.BaseVertexLocation = boxVertexOffset;
+
+	SubmeshGeometry gridSubmesh;
+	gridSubmesh.IndexCount = (UINT)grid.Indices32.size();
+	gridSubmesh.StartIndexLocation = gridIndexOffset;
+	gridSubmesh.BaseVertexLocation = gridVertexOffset;
+
+	SubmeshGeometry sphereSubmesh;
+	sphereSubmesh.IndexCount = (UINT)sphere.Indices32.size();
+	sphereSubmesh.StartIndexLocation = sphereIndexOffset;
+	sphereSubmesh.BaseVertexLocation = sphereVertexOffset;
+
+	SubmeshGeometry cylinderSubmesh;
+	cylinderSubmesh.IndexCount = (UINT)cylinder.Indices32.size();
+	cylinderSubmesh.StartIndexLocation = cylinderIndexOffset;
+	cylinderSubmesh.BaseVertexLocation = cylinderVertexOffset;
+
+	//
+	// Extract the vertex elements we are interested in and pack the
+	// vertices of all the meshes into one vertex buffer.
+	//
+
+	auto totalVertexCount =
+		box.Vertices.size() +
+		grid.Vertices.size() +
+		sphere.Vertices.size() +
+		cylinder.Vertices.size();
+
+	std::vector<Vertex> vertices(totalVertexCount);
+
+	UINT k = 0;
+	for (size_t i = 0; i < box.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Position = box.Vertices[i].Position;
+		vertices[k].Normal = box.Vertices[i].Normal;
+		vertices[k].UV = box.Vertices[i].TexC;
+	}
+
+	for (size_t i = 0; i < grid.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Position = grid.Vertices[i].Position;
+		vertices[k].Normal = grid.Vertices[i].Normal;
+		vertices[k].UV = grid.Vertices[i].TexC;
+	}
+
+	for (size_t i = 0; i < sphere.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Position = sphere.Vertices[i].Position;
+		vertices[k].Normal = sphere.Vertices[i].Normal;
+		vertices[k].UV = sphere.Vertices[i].TexC;
+	}
+
+	for (size_t i = 0; i < cylinder.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Position = cylinder.Vertices[i].Position;
+		vertices[k].Normal = cylinder.Vertices[i].Normal;
+		vertices[k].UV = cylinder.Vertices[i].TexC;
+	}
+
+	std::vector<std::uint16_t> indices;
+	indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
+	indices.insert(indices.end(), std::begin(grid.GetIndices16()), std::end(grid.GetIndices16()));
+	indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
+	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = "shapeGeo";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(Device.Get(),
+		CommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(Device.Get(),
+		CommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	geo->DrawArgs["box"] = boxSubmesh;
+	geo->DrawArgs["grid"] = gridSubmesh;
+	geo->DrawArgs["sphere"] = sphereSubmesh;
+	geo->DrawArgs["cylinder"] = cylinderSubmesh;
+
+	Geometries[geo->Name] = std::move(geo);
+}
+
+void Game::BuildRenderItems()
+{
+	auto boxRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixTranslation(0.0f, 5.0f, 0.0f));
+	boxRitem->ObjCBIndex = 0;
+	boxRitem->Geo = Geometries["shapeGeo"].get();
+	boxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
+	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
+	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+	AllRitems.push_back(std::move(boxRitem));
+
+	auto gridRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&gridRitem->World, XMMatrixScaling(5.0f, 1.0f, 5.0f) * XMMatrixTranslation(0.0f, 0.0f, 0.0f));
+	gridRitem->ObjCBIndex = 1;
+	gridRitem->Geo = Geometries["shapeGeo"].get();
+	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
+	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
+	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
+	AllRitems.push_back(std::move(gridRitem));
+
+	XMMATRIX brickTexTransform = XMMatrixScaling(10.0f, 10.0f, 10.0f);
+	UINT objCBIndex = 2;
+	for (int i = 0; i < 5; ++i)
+	{
+		auto leftCylRitem = std::make_unique<RenderItem>();
+		auto rightCylRitem = std::make_unique<RenderItem>();
+		auto leftSphereRitem = std::make_unique<RenderItem>();
+		auto rightSphereRitem = std::make_unique<RenderItem>();
+
+		XMMATRIX leftCylWorld = XMMatrixScaling(5.0f, 5.0f, 5.0f) * XMMatrixTranslation(-25.0f, 1.5f * 5, -50.0f + i * 25.0f);
+		XMMATRIX rightCylWorld = XMMatrixScaling(5.0f, 5.0f, 5.0f) * XMMatrixTranslation(+25.0f, 1.5f * 5, -50.0f + i * 25.0f);
+
+		XMMATRIX leftSphereWorld = XMMatrixScaling(5.0f, 5.0f, 5.0f) * XMMatrixTranslation(-25.0f, 3.5f * 5, -50.0f + i * 25.0f);
+		XMMATRIX rightSphereWorld = XMMatrixScaling(5.0f, 5.0f, 5.0f) * XMMatrixTranslation(+25.0f, 3.5f * 5, -50.0f + i * 25.0f);
+
+		XMStoreFloat4x4(&leftCylRitem->World, rightCylWorld);
+		XMStoreFloat4x4(&leftCylRitem->TexTransform, brickTexTransform);
+		leftCylRitem->ObjCBIndex = objCBIndex++;
+		leftCylRitem->Geo = Geometries["shapeGeo"].get();
+		leftCylRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		leftCylRitem->IndexCount = leftCylRitem->Geo->DrawArgs["cylinder"].IndexCount;
+		leftCylRitem->StartIndexLocation = leftCylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
+		leftCylRitem->BaseVertexLocation = leftCylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+
+		XMStoreFloat4x4(&rightCylRitem->World, leftCylWorld);
+		XMStoreFloat4x4(&rightCylRitem->TexTransform, brickTexTransform);
+		rightCylRitem->ObjCBIndex = objCBIndex++;
+		rightCylRitem->Geo = Geometries["shapeGeo"].get();
+		rightCylRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		rightCylRitem->IndexCount = rightCylRitem->Geo->DrawArgs["cylinder"].IndexCount;
+		rightCylRitem->StartIndexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
+		rightCylRitem->BaseVertexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+
+		XMStoreFloat4x4(&leftSphereRitem->World, leftSphereWorld);
+		leftSphereRitem->TexTransform = MathHelper::Identity4x4();
+		leftSphereRitem->ObjCBIndex = objCBIndex++;
+		leftSphereRitem->Geo = Geometries["shapeGeo"].get();
+		leftSphereRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		leftSphereRitem->IndexCount = leftSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
+		leftSphereRitem->StartIndexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
+		leftSphereRitem->BaseVertexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
+
+		XMStoreFloat4x4(&rightSphereRitem->World, rightSphereWorld);
+		rightSphereRitem->TexTransform = MathHelper::Identity4x4();
+		rightSphereRitem->ObjCBIndex = objCBIndex++;
+		rightSphereRitem->Geo = Geometries["shapeGeo"].get();
+		rightSphereRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
+		rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
+		rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
+
+		AllRitems.push_back(std::move(leftCylRitem));
+		AllRitems.push_back(std::move(rightCylRitem));
+		AllRitems.push_back(std::move(leftSphereRitem));
+		AllRitems.push_back(std::move(rightSphereRitem));
+	}
+
+	// All the render items are opaque.
+	for (auto& e : AllRitems)
+		OpaqueRitems.push_back(e.get());
 }
 
 void Game::BuildUAVs()
@@ -437,6 +701,39 @@ void Game::BuildUAVs()
 
 void Game::BuildRootSignature()
 {
+	// geo root signature
+	{
+		// Root parameter can be a table, root descriptor or root constants.
+		CD3DX12_ROOT_PARAMETER slotRootParameter[1];
+		slotRootParameter[0].InitAsConstantBufferView(0);
+
+		auto staticSamplers = GetStaticSamplers();
+
+		// A root signature is an array of root parameters.
+		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(1, slotRootParameter,
+			(UINT)staticSamplers.size(),
+			staticSamplers.data(),
+			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+		// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+		ComPtr<ID3DBlob> serializedRootSig = nullptr;
+		ComPtr<ID3DBlob> errorBlob = nullptr;
+		HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+			serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+
+		if (errorBlob != nullptr)
+		{
+			::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+		}
+		ThrowIfFailed(hr);
+
+		ThrowIfFailed(Device->CreateRootSignature(
+			0,
+			serializedRootSig->GetBufferPointer(),
+			serializedRootSig->GetBufferSize(),
+			IID_PPV_ARGS(geoRootSignature.GetAddressOf())));
+	}
+
 	// default root signature
 	{
 		CD3DX12_DESCRIPTOR_RANGE srvTable0;
@@ -549,6 +846,8 @@ void Game::BuildRootSignature()
 
 void Game::BuildShadersAndInputLayout()
 {
+	Shaders["GeoOpaqueVS"] = d3dUtil::CompileShader(L"DefaultVS.hlsl", nullptr, "main", "vs_5_1");
+	Shaders["GeoOpaquePS"] = d3dUtil::CompileShader(L"DefaultPS.hlsl", nullptr, "main", "ps_5_1");
 	Shaders["VS"] = d3dUtil::CompileShader(L"ParticleVertexShader.hlsl", nullptr, "main", "vs_5_1");
 	Shaders["GS"] = d3dUtil::CompileShader(L"ParticleGeometryShader.hlsl", nullptr, "main", "gs_5_1");
 	Shaders["PS"] = d3dUtil::CompileShader(L"ParticlePixelShader.hlsl", nullptr, "main", "ps_5_1");
@@ -556,10 +855,43 @@ void Game::BuildShadersAndInputLayout()
 	Shaders["UpdateCS"] = d3dUtil::CompileShader(L"UpdateComputeShader.hlsl", nullptr, "main", "cs_5_1");
 	Shaders["CopyDrawCountCS"] = d3dUtil::CompileShader(L"CopyDrawCountComputeShader.hlsl", nullptr, "main", "cs_5_1");
 	Shaders["DeadListInitCS"] = d3dUtil::CompileShader(L"DeadListInitComputeShader.hlsl", nullptr, "main", "cs_5_1");
+
+	geoInputLayout =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	};
 }
 
 void Game::BuildPSOs()
 {
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC geoOpaquePsoDesc;
+	ZeroMemory(&geoOpaquePsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	geoOpaquePsoDesc.InputLayout = { geoInputLayout.data(), (UINT)geoInputLayout.size() };
+	geoOpaquePsoDesc.pRootSignature = geoRootSignature.Get();
+	geoOpaquePsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["GeoOpaqueVS"]->GetBufferPointer()),
+		Shaders["GeoOpaqueVS"]->GetBufferSize()
+	};
+	geoOpaquePsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["GeoOpaquePS"]->GetBufferPointer()),
+		Shaders["GeoOpaquePS"]->GetBufferSize()
+	};
+	geoOpaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	geoOpaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	geoOpaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	geoOpaquePsoDesc.SampleMask = UINT_MAX;
+	geoOpaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	geoOpaquePsoDesc.NumRenderTargets = 1;
+	geoOpaquePsoDesc.RTVFormats[0] = BackBufferFormat;
+	geoOpaquePsoDesc.SampleDesc.Count = xMsaaState ? 4 : 1;
+	geoOpaquePsoDesc.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
+	geoOpaquePsoDesc.DSVFormat = DepthStencilFormat;
+	ThrowIfFailed(Device->CreateGraphicsPipelineState(&geoOpaquePsoDesc, IID_PPV_ARGS(&PSOs["geoOpaque"])));
+
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePSODescription;
 	ZeroMemory(&opaquePSODescription, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 	opaquePSODescription.pRootSignature = rootSignature.Get();
@@ -654,6 +986,22 @@ void Game::BuildFrameResources()
 	{
 		FrameResources.push_back(std::make_unique<FrameResource>(Device.Get(),
 			1, 1, 1));
+	}
+}
+
+void Game::PrintInfoMessages()
+{
+	UINT64 messageCount = InfoQueue->GetNumStoredMessagesAllowedByRetrievalFilter();
+	for (UINT64 i = 0; i < messageCount; ++i) {
+		SIZE_T messageLength = 0;
+		InfoQueue->GetMessage(i, nullptr, &messageLength);
+
+		std::vector<char> messageData(messageLength);
+		D3D12_MESSAGE* message = reinterpret_cast<D3D12_MESSAGE*>(messageData.data());
+		InfoQueue->GetMessage(i, message, &messageLength);
+
+		// Print or log the message
+		printf("D3D12 Message: %s\n", message->pDescription);
 	}
 }
 

@@ -48,6 +48,7 @@ protected:
 
 	Timer timer;
 
+	Microsoft::WRL::ComPtr<ID3D12InfoQueue> InfoQueue;
 	Microsoft::WRL::ComPtr<IDXGIFactory> DXGIFactory;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> SwapChain;
 	Microsoft::WRL::ComPtr<ID3D12Device> Device;

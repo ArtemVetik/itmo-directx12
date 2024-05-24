@@ -46,6 +46,7 @@ public:
 
 	// we cannot update a cbuffer until the GPU is done processing the commands that reference it
 	//so each frame needs their own cbuffers
+	std::unique_ptr<UploadBuffer<ObjectConstants>> GeoObjectCB = nullptr;
 	std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
 	std::unique_ptr<UploadBuffer<TimeConstants>> TimeCB = nullptr;
 	std::unique_ptr<UploadBuffer<ParticleConstants>> ParticleCB = nullptr;
