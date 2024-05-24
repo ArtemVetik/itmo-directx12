@@ -62,12 +62,11 @@ private:
 	int currentFrameResourceIndex = 0;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> geoInputLayout;
+	ComPtr<ID3D12RootSignature> gBufferRootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> geoRootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> rootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> particleRootSignature = nullptr;
 	ComPtr<ID3D12CommandSignature> particleCommandSignature = nullptr;
-
-	ComPtr<ID3D12DescriptorHeap> UAVHeap = nullptr;
 
 	ComPtr<ID3D12Resource> RWParticlePool = nullptr;
 	ComPtr<ID3D12Resource> ACDeadList = nullptr;
@@ -75,6 +74,8 @@ private:
 	ComPtr<ID3D12Resource> RWDrawArgs = nullptr;
 
 	ComPtr<ID3D12Resource> DrawListUploadBuffer = nullptr;
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GBufferGPUSRV;
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE ParticlePoolCPUSRV;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE ParticlePoolGPUSRV;
@@ -102,6 +103,7 @@ private:
 
 	std::vector<std::unique_ptr<RenderItem>> AllRitems;
 	std::vector<RenderItem*> OpaqueRitems;
+	std::vector<RenderItem*> SSRitems;
 
 	ObjectConstants MainObjectCB;
 	TimeConstants MainTimeCB;
@@ -128,7 +130,6 @@ private:
 	void BuildShadersAndInputLayout();
 	void BuildPSOs();
 	void BuildFrameResources();
-	void PrintInfoMessages();
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 

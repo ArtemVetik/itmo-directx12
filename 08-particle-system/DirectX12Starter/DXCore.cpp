@@ -239,7 +239,7 @@ LRESULT DXCore::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void DXCore::CreateRTVAndDSVDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC RTVHeapDescription;
-	RTVHeapDescription.NumDescriptors = SwapChainBufferCount;
+	RTVHeapDescription.NumDescriptors = SwapChainBufferCount + GBufferCount + 1; // +1 for accumulation buffer
 	RTVHeapDescription.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	RTVHeapDescription.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	RTVHeapDescription.NodeMask = 0;
@@ -253,6 +253,12 @@ void DXCore::CreateRTVAndDSVDescriptorHeaps()
 	DSVHeapDescription.NodeMask = 0;
 	ThrowIfFailed(Device->CreateDescriptorHeap(
 		&DSVHeapDescription, IID_PPV_ARGS(DSVHeap.GetAddressOf())));
+
+	D3D12_DESCRIPTOR_HEAP_DESC uavHeapDesc = {};
+	uavHeapDesc.NumDescriptors = 10;
+	uavHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	uavHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	ThrowIfFailed(Device->CreateDescriptorHeap(&uavHeapDesc, IID_PPV_ARGS(&SRVUAVHeap)));
 }
 
 void DXCore::Resize()
@@ -265,6 +271,52 @@ void DXCore::Resize()
 	FlushCommandQueue();
 
 	ThrowIfFailed(CommandList->Reset(CommandListAllocator.Get(), nullptr));
+
+	// Init G Buffer
+	{
+		for (int i = 0; i < GBufferCount; ++i)
+			GBuffer[i].Reset();
+
+		AccumulationBuffer.Reset();
+
+		CD3DX12_HEAP_PROPERTIES heapProperty(D3D12_HEAP_TYPE_DEFAULT);
+
+		D3D12_RESOURCE_DESC resourceDesc;
+		ZeroMemory(&resourceDesc, sizeof(resourceDesc));
+		resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+		resourceDesc.Alignment = 0;
+		resourceDesc.SampleDesc.Count = 1;
+		resourceDesc.SampleDesc.Quality = 0;
+		resourceDesc.MipLevels = 1;
+		resourceDesc.DepthOrArraySize = 1;
+		resourceDesc.Width = (UINT)screenWidth;
+		resourceDesc.Height = (UINT)screenHeight;
+		resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+		resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+		D3D12_CLEAR_VALUE clearVal;
+		clearVal.Color[0] = 0;
+		clearVal.Color[1] = 0;
+		clearVal.Color[2] = 0;
+		clearVal.Color[3] = 1;
+
+		for (int i = 0; i < GBufferCount; i++) {
+			resourceDesc.Format = GBufferFormats[i];
+			clearVal.Format = GBufferFormats[i];
+			ThrowIfFailed(Device->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &clearVal, IID_PPV_ARGS(GBuffer[i].GetAddressOf())));
+		}
+
+		ThrowIfFailed(Device->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &clearVal, IID_PPV_ARGS(AccumulationBuffer.GetAddressOf())));
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(RTVHeap->GetCPUDescriptorHandleForHeapStart(), SwapChainBufferCount, RTVDescriptorSize);
+
+		for (UINT i = 0; i < GBufferCount; i++)
+		{
+			Device->CreateRenderTargetView(GBuffer[i].Get(), nullptr, rtvHeapHandle);
+			rtvHeapHandle.Offset(1, RTVDescriptorSize);
+		}
+
+		Device->CreateRenderTargetView(AccumulationBuffer.Get(), nullptr, rtvHeapHandle);
+	}
 
 	// release the previous resources we will be recreating
 	for (int i = 0; i < SwapChainBufferCount; ++i)
@@ -323,6 +375,17 @@ void DXCore::Resize()
 	DSVDescription.Format = DepthStencilFormat;
 	DSVDescription.Texture2D.MipSlice = 0;
 	Device->CreateDepthStencilView(DepthStencilBuffer.Get(), &DSVDescription, DepthStencilView());
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	srvDesc.Texture2D.PlaneSlice = 0;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(SRVUAVHeap->GetCPUDescriptorHandleForHeapStart(), 9, CBVSRVUAVDescriptorSize);
+	Device->CreateShaderResourceView(DepthStencilBuffer.Get(), &srvDesc, hDescriptor);
 
 	// transition the resource from its initial state to be used as a depth buffer
 	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(DepthStencilBuffer.Get(),
@@ -409,9 +472,9 @@ HRESULT hardwareResult = D3D12CreateDevice(
 	IID_PPV_ARGS(&Device));
 
 #if defined(DEGUG) || defined(_DEBUG)
-	Device->QueryInterface(IID_PPV_ARGS(&InfoQueue));
-	InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-	//InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+Device->QueryInterface(IID_PPV_ARGS(&InfoQueue));
+InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+//InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
 #endif
 
 ThrowIfFailed(Device->CreateFence(0, D3D12_FENCE_FLAG_NONE,
@@ -519,6 +582,22 @@ void DXCore::FlushCommandQueue()
 		// wait until the GPU hits current fence event is fired
 		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
+	}
+}
+
+void DXCore::PrintInfoMessages()
+{
+	UINT64 messageCount = InfoQueue->GetNumStoredMessagesAllowedByRetrievalFilter();
+	for (UINT64 i = 0; i < messageCount; ++i) {
+		SIZE_T messageLength = 0;
+		InfoQueue->GetMessage(i, nullptr, &messageLength);
+
+		std::vector<char> messageData(messageLength);
+		D3D12_MESSAGE* message = reinterpret_cast<D3D12_MESSAGE*>(messageData.data());
+		InfoQueue->GetMessage(i, message, &messageLength);
+
+		// Print or log the message
+		printf("D3D12 Message: %s\n", message->pDescription);
 	}
 }
 

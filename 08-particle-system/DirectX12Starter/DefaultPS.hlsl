@@ -22,9 +22,20 @@ struct VertexOut
 	float2 TexC    : TEXCOORD;
 };
 
-float4 main(VertexOut pin) : SV_Target
+struct ps_output
 {
-    return float4(pin.PosW, 1);
+    float4 albedo : SV_TARGET0;
+    float3 normal : SV_TARGET1;
+};
+
+ps_output main(VertexOut pin) : SV_Target
+{
+    ps_output output;
+    
+    output.albedo = float4(pin.PosW, 1);
+    output.normal = pin.NormalW;
+    
+    return output;
 }
 
 
