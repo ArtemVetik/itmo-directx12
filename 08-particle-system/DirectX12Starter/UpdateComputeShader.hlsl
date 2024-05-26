@@ -1,6 +1,14 @@
 #include "ParticleInclude.hlsl"
 #include "SimplexNoise.hlsl"
 
+SamplerState gsamPointWrap : register(s0);
+SamplerState gsamPointClamp : register(s1);
+SamplerState gsamLinearWrap : register(s2);
+SamplerState gsamLinearClamp : register(s3);
+SamplerState gsamAnisotropicWrap : register(s4);
+SamplerState gsamAnisotropicClamp : register(s5);
+SamplerComparisonState gsamShadow : register(s6);
+
 cbuffer objectData : register(b0)
 {
 	matrix world;
@@ -28,6 +36,8 @@ cbuffer particleData : register(b2)
 	int gridSize;
 }
 
+Texture2D gDepthTexture				: register(t0);
+
 RWStructuredBuffer<Particle> ParticlePool		: register(u0);
 AppendStructuredBuffer<uint> ADeadList			: register(u1);
 RWStructuredBuffer<ParticleDraw> DrawList		: register(u2);
@@ -52,8 +62,34 @@ void main(uint id : SV_DispatchThreadID)
 	
 	float3 curlPosition = particle.Position * 0.1f;
 	float3 curlVelocity = curlNoise3D(curlPosition, 1.0f);
-	particle.Velocity = curlVelocity * 2;
+	//particle.Velocity = curlVelocity * 2;
+	particle.Velocity += float3(0, -10.0f * deltaTime, 0);
+	
+	float3 viewPos = mul(float4(particle.Position, 1.0f), mul(world, view)).xyz;
+	float4 clipSpacePos = mul(float4(viewPos, 1.0f), projection);
+	clipSpacePos /= clipSpacePos.w;
+	float2 aClipSpacePos = abs(clipSpacePos);
+	
+	if (aClipSpacePos.x < 1.0f && aClipSpacePos.y < 1.0f)
+	{
+		float2 uv = clipSpacePos.xy * float2(0.5f, -0.5f) + 0.5;
+        float depthValue = gDepthTexture.SampleLevel(gsamPointWrap, uv, 0).r;
+		
+		const float n = 5.0f;
+		const float f = 1000.0f;
+		
+		float linearEyeDepth = n * f / (depthValue * (n - f) + f);
 
+		float radius = 0.0f;
+
+		float surfaceThickness = 100.0f;
+
+		if (viewPos.z > linearEyeDepth - radius)
+		{
+			particle.Velocity = float3(0, 50, 0);
+		}
+	}
+	
 	//// put the particle back
 	ParticlePool[id.x] = particle;
 

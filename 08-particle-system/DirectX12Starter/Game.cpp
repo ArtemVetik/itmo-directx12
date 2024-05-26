@@ -182,6 +182,8 @@ void Game::Draw(const Timer& timer)
 
 	CommandList->SetPipelineState(PSOs["particleUpdate"].Get());
 	CommandList->SetComputeRootSignature(particleRootSignature.Get());
+	CD3DX12_GPU_DESCRIPTOR_HANDLE hDescriptor(SRVUAVHeap->GetGPUDescriptorHandleForHeapStart(), 9, CBVSRVUAVDescriptorSize);
+	CommandList->SetComputeRootDescriptorTable(7, hDescriptor);
 	CommandList->Dispatch(emitter->GetMaxParticles(), 1, 1);
 
 	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(RWDrawList.Get()));
@@ -960,8 +962,11 @@ void Game::BuildRootSignature()
 		CD3DX12_DESCRIPTOR_RANGE uavTable3;
 		uavTable3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 3);
 
+		CD3DX12_DESCRIPTOR_RANGE srvTable4;
+		srvTable4.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
 		// Root parameter can be a table, root descriptor or root constants.
-		CD3DX12_ROOT_PARAMETER slotRootParameter[7];
+		CD3DX12_ROOT_PARAMETER slotRootParameter[8];
 
 		// Perfomance TIP: Order from most frequent to least frequent.
 		slotRootParameter[0].InitAsConstantBufferView(0);
@@ -971,10 +976,14 @@ void Game::BuildRootSignature()
 		slotRootParameter[4].InitAsDescriptorTable(1, &uavTable1);
 		slotRootParameter[5].InitAsDescriptorTable(1, &uavTable2);
 		slotRootParameter[6].InitAsDescriptorTable(1, &uavTable3);
+		slotRootParameter[7].InitAsDescriptorTable(1, &srvTable4);
+
+		auto staticSamplers = GetStaticSamplers();
 
 		// A root signature is an array of root parameters.
-		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(7, slotRootParameter,
-			0, nullptr,
+		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(8, slotRootParameter,
+			(UINT)staticSamplers.size(),
+			staticSamplers.data(),
 			D3D12_ROOT_SIGNATURE_FLAG_NONE);
 
 		// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
