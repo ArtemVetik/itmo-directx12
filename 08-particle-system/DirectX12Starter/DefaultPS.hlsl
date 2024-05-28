@@ -32,7 +32,7 @@ ps_output main(VertexOut pin) : SV_Target
 {
     ps_output output;
     
-    output.albedo = float4(pin.PosW, 1);
+    output.albedo = float4(pin.TexC, 1, 1);
     output.normal = pin.NormalW;
     
     return output;

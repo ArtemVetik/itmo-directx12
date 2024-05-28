@@ -192,6 +192,9 @@
     <ClCompile Include="MathHelper.cpp" />
     <ClCompile Include="SystemData.cpp" />
     <ClCompile Include="Timer.cpp" />
+    <None Include="ValueNoise.hlsl">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DirectX12Starter.rc" />
@@ -297,6 +300,9 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
       <FileType>Document</FileType>
     </None>
+    <None Include="PerlinNoise.hlsl">
+      <FileType>Document</FileType>
+    </None>
     <FxCompile Include="RenderQuadPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
@@ -305,6 +311,9 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
     </FxCompile>
+    <None Include="SimpleRand.hlsl">
+      <FileType>Document</FileType>
+    </None>
     <FxCompile Include="UpdateComputeShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>

@@ -14,6 +14,8 @@ public:
 
 	XMFLOAT4X4 GetViewMatrix();
 	XMFLOAT4X4 GetProjectionMatrix();
+	float GetNear() const;
+	float GetFar() const;
 
 	void Pitch(float angle);
 	void RotateY(float angle);
@@ -37,6 +39,8 @@ private:
 
 	XMFLOAT4X4 viewMatrix;
 	XMFLOAT4X4 projectionMatrix;
+	float nearValue;
+	float farValue;
 
 	POINT mLastMousePos;
 	bool mViewDirty = true;

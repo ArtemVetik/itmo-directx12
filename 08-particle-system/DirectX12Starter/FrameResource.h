@@ -10,6 +10,8 @@ struct ObjectConstants
 	DirectX::XMFLOAT4X4 View = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 Projection = MathHelper::Identity4x4();
 	float AspectRatio = 0.0f;
+	float Near = 0.0f;
+	float Far = 0.0f;
 };
 
 struct TimeConstants
@@ -20,12 +22,14 @@ struct TimeConstants
 
 struct ParticleConstants
 {
+	DirectX::XMFLOAT3 CenterPos;
+	float pad0;
 	DirectX::XMFLOAT4 startColor;
 	DirectX::XMFLOAT4 endColor;
 	DirectX::XMFLOAT3 velocity;
 	float LifeTime = 0.0f;
 	DirectX::XMFLOAT3 acceleration;
-	float pad;
+	float pad1;
 	int EmitCount = 0;
 	int MaxParticles = 0;
 	int GridSize = 0;

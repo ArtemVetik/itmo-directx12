@@ -39,6 +39,8 @@ public:
 	float GetLifeTime();
 	float GetEmitTimeCounter();
 	float GetTimeBetweenEmit();
+	void SetCenterPos(DirectX::XMFLOAT3 pos);
+	DirectX::XMFLOAT3 GetCenterPos();
 	DirectX::XMFLOAT3 GetVelocity();
 	DirectX::XMFLOAT3 GetAcceleration();
 	DirectX::XMFLOAT4 GetStartColor();
@@ -58,6 +60,7 @@ private:
 	float emissionRate;
 	float timeBetweenEmit;
 	float emitTimeCounter;
+	DirectX::XMFLOAT3 centerPos;
 	DirectX::XMFLOAT3 velocity;
 	DirectX::XMFLOAT3 acceleration;
 	DirectX::XMFLOAT4 startColor;

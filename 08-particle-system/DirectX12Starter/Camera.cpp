@@ -6,6 +6,9 @@ Camera::Camera(unsigned int width, unsigned int height)
 
 	ResetCamera();
 
+	nearValue = 5.0f;
+	farValue = 1000.0f;
+
 	XMVECTOR pos = XMVectorSet(0.0f, 20.0f, -150.0f, 0.0f);
 	XMVECTOR dir = XMVectorSet(0, 0, 1, 0);
 	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
@@ -38,6 +41,16 @@ XMFLOAT4X4 Camera::GetProjectionMatrix()
 	return projectionMatrix;
 }
 
+float Camera::GetNear() const
+{
+	return nearValue;
+}
+
+float Camera::GetFar() const
+{
+	return farValue;
+}
+
 void Camera::Pitch(float angle)
 {
 	// Rotate up and look vector about the right vector.
@@ -65,7 +78,7 @@ void Camera::RotateY(float angle)
 
 void Camera::SetProjectionMatrix(unsigned int newWidth, unsigned int newHeight)
 {
-	XMMATRIX P = XMMatrixPerspectiveFovLH(45.0f * (3.14f / 180.0f), (float)newWidth / (float)newHeight, 5.0f, 1000.0f);
+	XMMATRIX P = XMMatrixPerspectiveFovLH(45.0f * (3.14f / 180.0f), (float)newWidth / (float)newHeight, nearValue, farValue);
 	XMStoreFloat4x4(&projectionMatrix, (P));
 }
 
@@ -81,37 +94,43 @@ void Camera::Update()
 	if (InputManager::getInstance()->isKeyPressed('W') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_Y))
 	{
 		pos += (direction * moveRate);
+		mViewDirty = true;
 	}
 
 	if (InputManager::getInstance()->isKeyPressed('S') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_A))
 	{
 		pos += (-direction * moveRate);
+		mViewDirty = true;
 	}
 
 	if (InputManager::getInstance()->isKeyPressed('A') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_X))
 	{
 		pos += (-lrVector * moveRate);
+		mViewDirty = true;
 	}
 
 	if (InputManager::getInstance()->isKeyPressed('D') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_B))
 	{
 		pos += (+lrVector * moveRate);
+		mViewDirty = true;
 	}
 
 	if (InputManager::getInstance()->isKeyPressed('E') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_DPAD_UP))
 	{
 		pos += (upVector * moveRate);
+		mViewDirty = true;
 	}
 
 	if (InputManager::getInstance()->isKeyPressed('Q') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_DPAD_DOWN))
 	{
 		pos += (-upVector * moveRate);
+		mViewDirty = true;
 	}
 
 	XMStoreFloat3(&mPosition, pos);
 
 
-	//if (mViewDirty)
+	if (mViewDirty)
 	{
 		XMVECTOR R = XMLoadFloat3(&mRight);
 		XMVECTOR U = XMLoadFloat3(&mUp);

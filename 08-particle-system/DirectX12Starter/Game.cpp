@@ -33,10 +33,10 @@ bool Game::Initialize()
 	inputManager = new InputManager();
 
 	emitter = new Emitter(
-		3,
+		100000,
 		100,
-		3.0f, // Particles per second
-		5.0f, // Particle lifetime
+		200.0f, // Particles per second
+		10.0f, // Particle lifetime
 		XMFLOAT3(0.0f, 0.0f, 0.0f),
 		XMFLOAT3(0.0f, 0.0f, 0.0f),
 		XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f),
@@ -109,6 +109,17 @@ void Game::Resize()
 
 void Game::Update(const Timer& timer)
 {
+	auto emitterPos = emitter->GetCenterPos();
+	
+	if (InputManager::getInstance()->isKeyPressed('J'))
+		emitter->SetCenterPos({ emitterPos.x - 10 * timer.GetDeltaTime(), emitterPos.y, emitterPos.z });
+	if (InputManager::getInstance()->isKeyPressed('K'))
+		emitter->SetCenterPos({ emitterPos.x + 10 * timer.GetDeltaTime(), emitterPos.y, emitterPos.z });
+	if (InputManager::getInstance()->isKeyPressed('I'))
+		emitter->SetCenterPos({ emitterPos.x, emitterPos.y, emitterPos.z - 10 * timer.GetDeltaTime() });
+	if (InputManager::getInstance()->isKeyPressed('M'))
+		emitter->SetCenterPos({ emitterPos.x, emitterPos.y, emitterPos.z + 10 * timer.GetDeltaTime() });
+
 	mainCamera->Update();
 	inputManager->UpdateController();
 
@@ -172,6 +183,7 @@ void Game::Draw(const Timer& timer)
 		UpdateMainPassCB(timer);
 
 		CommandList->Dispatch(emitter->GetEmitCount(), 1, 1);
+		printf("T: %f -- %d\n", emitter->GetEmitTimeCounter(), emitter->GetEmitCount());
 	}
 
 	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(RWDrawList.Get(),
@@ -186,6 +198,8 @@ void Game::Draw(const Timer& timer)
 	CommandList->SetComputeRootSignature(particleRootSignature.Get());
 	CD3DX12_GPU_DESCRIPTOR_HANDLE hDescriptor(SRVUAVHeap->GetGPUDescriptorHandleForHeapStart(), 9, CBVSRVUAVDescriptorSize);
 	CommandList->SetComputeRootDescriptorTable(7, hDescriptor);
+	hDescriptor = CD3DX12_GPU_DESCRIPTOR_HANDLE(SRVUAVHeap->GetGPUDescriptorHandleForHeapStart(), 7, CBVSRVUAVDescriptorSize);
+	CommandList->SetComputeRootDescriptorTable(9, hDescriptor);
 	CommandList->Dispatch(emitter->GetMaxParticles(), 1, 1);
 
 	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(RWDrawList.Get()));
@@ -223,7 +237,7 @@ void Game::Draw(const Timer& timer)
 		CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(GBuffer[i].Get(),
 			D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	}
-	
+
 	CommandList->SetPipelineState(PSOs["geoOpaque"].Get());
 
 	CommandList->SetGraphicsRootSignature(geoRootSignature.Get());
@@ -320,7 +334,7 @@ void Game::Draw(const Timer& timer)
 		CommandList->IASetVertexBuffers(0, 1, &ri->Geo->VertexBufferView());
 		CommandList->IASetIndexBuffer(&ri->Geo->IndexBufferView());
 		CommandList->IASetPrimitiveTopology(ri->PrimitiveType);
-		
+
 		CommandList->SetGraphicsRootDescriptorTable(0, GBufferGPUSRV);
 
 		CommandList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
@@ -362,6 +376,8 @@ void Game::UpdateMainPassCB(const Timer& timer)
 	XMStoreFloat4x4(&objConstants.View, XMMatrixTranspose(view));
 	XMStoreFloat4x4(&objConstants.Projection, XMMatrixTranspose(projection));
 	objConstants.AspectRatio = (float)screenWidth / screenHeight;
+	objConstants.Near = mainCamera->GetNear();
+	objConstants.Far = mainCamera->GetFar();
 
 	auto currentObjectCB = currentFrameResource->ObjectCB.get();
 	currentObjectCB->CopyData(0, objConstants);
@@ -382,6 +398,8 @@ void Game::UpdateMainPassCB(const Timer& timer)
 				XMStoreFloat4x4(&objConstants.View, XMMatrixTranspose(view));
 				XMStoreFloat4x4(&objConstants.Projection, XMMatrixTranspose(projection));
 				objConstants.AspectRatio = (float)screenWidth / screenHeight;
+				objConstants.Near = mainCamera->GetNear();
+				objConstants.Far = mainCamera->GetFar();
 
 				currGeoObjectCB->CopyData(e->ObjCBIndex, objConstants);
 
@@ -397,6 +415,7 @@ void Game::UpdateMainPassCB(const Timer& timer)
 	auto currentTimeCB = currentFrameResource->TimeCB.get();
 	currentTimeCB->CopyData(0, MainTimeCB);
 
+	MainParticleCB.CenterPos = emitter->GetCenterPos();
 	MainParticleCB.EmitCount = emitter->GetEmitCount();
 	MainParticleCB.MaxParticles = emitter->GetMaxParticles();
 	MainParticleCB.GridSize = emitter->GetGridSize();
@@ -411,7 +430,8 @@ void Game::UpdateMainPassCB(const Timer& timer)
 void Game::BuildShapeGeometry()
 {
 	GeometryGenerator geoGen;
-	GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
+	//GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
+	GeometryGenerator::MeshData box = geoGen.CreateSphere(0.5f, 20.0f, 20.0f);
 	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 30.0f, 60, 40);
 	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
@@ -999,8 +1019,11 @@ void Game::BuildRootSignature()
 		CD3DX12_DESCRIPTOR_RANGE srvTable0;
 		srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
+		CD3DX12_DESCRIPTOR_RANGE srvTable1;
+		srvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+
 		// Root parameter can be a table, root descriptor or root constants.
-		CD3DX12_ROOT_PARAMETER slotRootParameter[9];
+		CD3DX12_ROOT_PARAMETER slotRootParameter[10];
 
 		// Perfomance TIP: Order from most frequent to least frequent.
 		slotRootParameter[0].InitAsConstantBufferView(0);
@@ -1012,11 +1035,12 @@ void Game::BuildRootSignature()
 		slotRootParameter[6].InitAsDescriptorTable(1, &uavTable3);
 		slotRootParameter[7].InitAsDescriptorTable(1, &srvTable0);
 		slotRootParameter[8].InitAsDescriptorTable(1, &uavTable4);
+		slotRootParameter[9].InitAsDescriptorTable(1, &srvTable1);
 
 		auto staticSamplers = GetStaticSamplers();
 
 		// A root signature is an array of root parameters.
-		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(9, slotRootParameter,
+		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(10, slotRootParameter,
 			(UINT)staticSamplers.size(),
 			staticSamplers.data(),
 			D3D12_ROOT_SIGNATURE_FLAG_NONE);
@@ -1136,7 +1160,7 @@ void Game::BuildPSOs()
 	accumulationPsoDesc.DSVFormat = DepthStencilFormat;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&accumulationPsoDesc, IID_PPV_ARGS(&PSOs["accumulationPass"])));
 	PSOs["accumulationPass"]->SetName(L"accumulationPassPSO");
-	
+
 	accumulationPsoDesc.VS =
 	{
 		reinterpret_cast<BYTE*>(Shaders["RenderQuadVS"]->GetBufferPointer()),
@@ -1147,7 +1171,7 @@ void Game::BuildPSOs()
 		reinterpret_cast<BYTE*>(Shaders["RenderQuadPS"]->GetBufferPointer()),
 		Shaders["RenderQuadPS"]->GetBufferSize()
 	};
-	ThrowIfFailed(Device->CreateGraphicsPipelineState(&accumulationPsoDesc, IID_PPV_ARGS(&PSOs["renderQuad"])));	
+	ThrowIfFailed(Device->CreateGraphicsPipelineState(&accumulationPsoDesc, IID_PPV_ARGS(&PSOs["renderQuad"])));
 	PSOs["renderQuad"]->SetName(L"renderQuadPSO");
 
 

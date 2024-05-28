@@ -15,6 +15,8 @@ cbuffer objectData : register(b0)
 	matrix view;
 	matrix projection;
 	float aspectRatio;
+    float near;
+    float far;
 };
 
 cbuffer timeData : register(b1)
@@ -25,18 +27,21 @@ cbuffer timeData : register(b1)
 
 cbuffer particleData : register(b2)
 {
-	float4 startColor;
-	float4 endColor;
-	float3 velocity;
-	float lifeTime;
-	float3 acceleration;
-	float pad;
-	int emitCount;
-	int maxParticles;
-	int gridSize;
+    float3 centerPos;
+    float pad0;
+    float4 startColor;
+    float4 endColor;
+    float3 velocity;
+    float lifeTime;
+    float3 acceleration;
+    float pad;
+    int emitCount;
+    int maxParticles;
+    int gridSize;
 }
 
 Texture2D gDepthTexture				: register(t0);
+Texture2D gNormalTexture			: register(t1);
 
 RWStructuredBuffer<Particle> ParticlePool		: register(u0);
 AppendStructuredBuffer<uint> ADeadList			: register(u1);
@@ -75,26 +80,18 @@ void main(uint id : SV_DispatchThreadID)
 	{
 		float2 uv = clipSpacePos.xy * float2(0.5f, -0.5f) + 0.5;
         float depthValue = gDepthTexture.SampleLevel(gsamPointWrap, uv, 0).r;
+        float3 normalValue = gNormalTexture.SampleLevel(gsamPointWrap, uv, 0);
 		
-		const float n = 5.0f;
-		const float f = 1000.0f;
-		
-		float linearEyeDepth = n * f / (depthValue * (n - f) + f);
+		float linearEyeDepth = near * far / (depthValue * (near - far) + far);
 
-		float radius = 0.0f;
+		float radius = particle.Size;
+		float surfaceThickness = 10.0f;
 
-		float surfaceThickness = 100.0f;
-
-		if (viewPos.z > linearEyeDepth - radius)
+        if (viewPos.z > linearEyeDepth - radius && viewPos.z < linearEyeDepth + radius + surfaceThickness)
 		{
-			particle.Velocity = float3(0, 50, 0);
-		}
+            particle.Velocity = normalize(normalValue) * 20;
+        }
 	}
-	
-    if ((float) (particle.Age < lifeTime / 2))
-        particle.Color = float4(1, 1, 1, 1);
-	else
-        particle.Color = float4(1, 0, 0, 1);
 	
 	//// put the particle back
 	ParticlePool[id.x] = particle;

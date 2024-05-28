@@ -184,5 +184,14 @@
     <None Include="SimplexNoise.hlsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="SimpleRand.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="ValueNoise.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="PerlinNoise.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

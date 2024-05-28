@@ -17,6 +17,7 @@ Emitter::Emitter(int maxParticles,
 	startColor(startColor),
 	endColor(endColor)
 {
+	centerPos = {0, 90, 0};
 	emitTimeCounter = 0.0f;
 	timeBetweenEmit = 1.0f / emissionRate;
 }
@@ -59,6 +60,16 @@ float Emitter::GetEmitTimeCounter()
 float Emitter::GetTimeBetweenEmit()
 {
 	return timeBetweenEmit;
+}
+
+void Emitter::SetCenterPos(DirectX::XMFLOAT3 pos)
+{
+	centerPos = pos;
+}
+
+DirectX::XMFLOAT3 Emitter::GetCenterPos()
+{
+	return centerPos;
 }
 
 DirectX::XMFLOAT3 Emitter::GetVelocity() 

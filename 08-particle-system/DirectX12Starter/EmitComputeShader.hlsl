@@ -1,5 +1,6 @@
 #include "ParticleInclude.hlsl"
 #include "SimplexNoise.hlsl"
+#include "SimpleRand.hlsl"
 
 cbuffer objectData : register(b0)
 {
@@ -17,6 +18,8 @@ cbuffer timeData : register(b1)
 
 cbuffer particleData : register(b2)
 {
+    float3 centerPos;
+    float pad0;
 	float4 startColor;
 	float4 endColor;
 	float3 velocity;
@@ -64,7 +67,8 @@ void main(uint id : SV_DispatchThreadID )
 	
 	//color and position depend on the grid position and size
     //emitParticle.Position = gridPosition / 4.0f - float3(gridSize / 20.0f, gridSize / 20.0f, -gridSize / 10.0f) + float3(0, 100, -20);
-    emitParticle.Position = float3(id.x * 2, 90, 0);
+    emitParticle.Position = centerPos + float3((random(TotalTime * 100) * 2 - 1) * 15, 0, (random(TotalTime * 100 + 1) * 2 - 1) * 15);
+    //emitParticle.Position = centerPos;
 	emitParticle.Velocity = float3(0, -40.0f, 0.0f);
     emitParticle.Color = float4(1, 1, 1, 1);
 	//emitParticle.Color = float4(gridPosition / gridSize, 1);
