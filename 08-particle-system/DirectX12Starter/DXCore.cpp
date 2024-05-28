@@ -255,7 +255,7 @@ void DXCore::CreateRTVAndDSVDescriptorHeaps()
 		&DSVHeapDescription, IID_PPV_ARGS(DSVHeap.GetAddressOf())));
 
 	D3D12_DESCRIPTOR_HEAP_DESC uavHeapDesc = {};
-	uavHeapDesc.NumDescriptors = 10;
+	uavHeapDesc.NumDescriptors = 11;
 	uavHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	uavHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(Device->CreateDescriptorHeap(&uavHeapDesc, IID_PPV_ARGS(&SRVUAVHeap)));

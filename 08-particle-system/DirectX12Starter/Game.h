@@ -72,6 +72,7 @@ private:
 	ComPtr<ID3D12Resource> ACDeadList = nullptr;
 	ComPtr<ID3D12Resource> RWDrawList = nullptr;
 	ComPtr<ID3D12Resource> RWDrawArgs = nullptr;
+	ComPtr<ID3D12Resource> RWDeadListCounter = nullptr;
 
 	ComPtr<ID3D12Resource> DrawListUploadBuffer = nullptr;
 
@@ -94,6 +95,9 @@ private:
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE DrawArgsCPUUAV;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE DrawArgsGPUUAV;
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE DeadListCounterCPUUAV;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE DeadListCounterGPUUAV;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> Geometries;
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> Shaders;

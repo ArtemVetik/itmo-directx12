@@ -33,10 +33,10 @@ bool Game::Initialize()
 	inputManager = new InputManager();
 
 	emitter = new Emitter(
-		1000000,
+		3,
 		100,
-		1000000.0f, // Particles per second
-		1000.0f, // Particle lifetime
+		3.0f, // Particles per second
+		5.0f, // Particle lifetime
 		XMFLOAT3(0.0f, 0.0f, 0.0f),
 		XMFLOAT3(0.0f, 0.0f, 0.0f),
 		XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f),
@@ -86,6 +86,7 @@ bool Game::Initialize()
 	CommandList->SetComputeRootDescriptorTable(4, ACDeadListGPUUAV);
 	CommandList->SetComputeRootDescriptorTable(5, DrawListGPUUAV);
 	CommandList->SetComputeRootDescriptorTable(6, DrawArgsGPUUAV);
+	CommandList->SetComputeRootDescriptorTable(8, DeadListCounterGPUUAV);
 
 	CommandList->Dispatch(emitter->GetMaxParticles(), 1, 1);
 
@@ -125,7 +126,7 @@ void Game::Update(const Timer& timer)
 		CloseHandle(eventHandle);
 	}
 
-	emitter->Update(timer.GetTotalTime(), timer.GetTotalTime());
+	emitter->Update(timer.GetTotalTime(), timer.GetDeltaTime());
 	UpdateMainPassCB(timer);
 }
 
@@ -159,6 +160,7 @@ void Game::Draw(const Timer& timer)
 	CommandList->SetComputeRootDescriptorTable(4, ACDeadListGPUUAV);
 	CommandList->SetComputeRootDescriptorTable(5, DrawListGPUUAV);
 	CommandList->SetComputeRootDescriptorTable(6, DrawArgsGPUUAV);
+	CommandList->SetComputeRootDescriptorTable(8, DeadListCounterGPUUAV);
 
 	while (emitter->GetEmitTimeCounter() >= emitter->GetTimeBetweenEmit())
 	{
@@ -829,6 +831,35 @@ void Game::BuildUAVs()
 		DrawArgsGPUUAV = CD3DX12_GPU_DESCRIPTOR_HANDLE(SRVUAVHeap->GetGPUDescriptorHandleForHeapStart(), 3, CBVSRVUAVDescriptorSize);
 		Device->CreateUnorderedAccessView(RWDrawArgs.Get(), RWDrawArgs.Get(), &drawArgsUAVDescription, DrawArgsCPUUAV);
 	}
+
+	// Dead List Counter
+	{
+		UINT64 deadListCounterByteSize = (sizeof(unsigned int) * 1);
+		UINT64 countBufferOffset = 0;
+
+		ThrowIfFailed(Device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(deadListCounterByteSize + sizeof(UINT), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+			nullptr,
+			IID_PPV_ARGS(&RWDeadListCounter)));
+		RWDeadListCounter.Get()->SetName(L"DeadListCounter");
+
+		D3D12_UNORDERED_ACCESS_VIEW_DESC deadListCounterUAVDescription = {};
+
+		deadListCounterUAVDescription.Format = DXGI_FORMAT_UNKNOWN;
+		deadListCounterUAVDescription.Buffer.FirstElement = 0;
+		deadListCounterUAVDescription.Buffer.NumElements = 1;
+		deadListCounterUAVDescription.Buffer.StructureByteStride = sizeof(unsigned int);
+		deadListCounterUAVDescription.Buffer.CounterOffsetInBytes = countBufferOffset;
+		deadListCounterUAVDescription.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+		deadListCounterUAVDescription.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+
+		DeadListCounterCPUUAV = CD3DX12_CPU_DESCRIPTOR_HANDLE(SRVUAVHeap->GetCPUDescriptorHandleForHeapStart(), 10, CBVSRVUAVDescriptorSize);
+		DeadListCounterGPUUAV = CD3DX12_GPU_DESCRIPTOR_HANDLE(SRVUAVHeap->GetGPUDescriptorHandleForHeapStart(), 10, CBVSRVUAVDescriptorSize);
+		Device->CreateUnorderedAccessView(RWDeadListCounter.Get(), nullptr, &deadListCounterUAVDescription, DeadListCounterCPUUAV);
+	}
 }
 
 void Game::BuildRootSignature()
@@ -962,11 +993,14 @@ void Game::BuildRootSignature()
 		CD3DX12_DESCRIPTOR_RANGE uavTable3;
 		uavTable3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 3);
 
-		CD3DX12_DESCRIPTOR_RANGE srvTable4;
-		srvTable4.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+		CD3DX12_DESCRIPTOR_RANGE uavTable4;
+		uavTable4.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 4);
+
+		CD3DX12_DESCRIPTOR_RANGE srvTable0;
+		srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 		// Root parameter can be a table, root descriptor or root constants.
-		CD3DX12_ROOT_PARAMETER slotRootParameter[8];
+		CD3DX12_ROOT_PARAMETER slotRootParameter[9];
 
 		// Perfomance TIP: Order from most frequent to least frequent.
 		slotRootParameter[0].InitAsConstantBufferView(0);
@@ -976,12 +1010,13 @@ void Game::BuildRootSignature()
 		slotRootParameter[4].InitAsDescriptorTable(1, &uavTable1);
 		slotRootParameter[5].InitAsDescriptorTable(1, &uavTable2);
 		slotRootParameter[6].InitAsDescriptorTable(1, &uavTable3);
-		slotRootParameter[7].InitAsDescriptorTable(1, &srvTable4);
+		slotRootParameter[7].InitAsDescriptorTable(1, &srvTable0);
+		slotRootParameter[8].InitAsDescriptorTable(1, &uavTable4);
 
 		auto staticSamplers = GetStaticSamplers();
 
 		// A root signature is an array of root parameters.
-		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(8, slotRootParameter,
+		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(9, slotRootParameter,
 			(UINT)staticSamplers.size(),
 			staticSamplers.data(),
 			D3D12_ROOT_SIGNATURE_FLAG_NONE);
@@ -1072,6 +1107,7 @@ void Game::BuildPSOs()
 	geoOpaquePsoDesc.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
 	geoOpaquePsoDesc.DSVFormat = DepthStencilFormat;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&geoOpaquePsoDesc, IID_PPV_ARGS(&PSOs["geoOpaque"])));
+	PSOs["geoOpaque"]->SetName(L"geoOpaquePSO");
 
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC accumulationPsoDesc;
@@ -1099,6 +1135,7 @@ void Game::BuildPSOs()
 	accumulationPsoDesc.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
 	accumulationPsoDesc.DSVFormat = DepthStencilFormat;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&accumulationPsoDesc, IID_PPV_ARGS(&PSOs["accumulationPass"])));
+	PSOs["accumulationPass"]->SetName(L"accumulationPassPSO");
 	
 	accumulationPsoDesc.VS =
 	{
@@ -1111,6 +1148,7 @@ void Game::BuildPSOs()
 		Shaders["RenderQuadPS"]->GetBufferSize()
 	};
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&accumulationPsoDesc, IID_PPV_ARGS(&PSOs["renderQuad"])));	
+	PSOs["renderQuad"]->SetName(L"renderQuadPSO");
 
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePSODescription;
@@ -1160,6 +1198,7 @@ void Game::BuildPSOs()
 	opaquePSODescription.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
 	opaquePSODescription.DSVFormat = DepthStencilFormat;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&opaquePSODescription, IID_PPV_ARGS(&PSOs["opaque"])));
+	PSOs["opaque"]->SetName(L"opaquePSO");
 
 	D3D12_COMPUTE_PIPELINE_STATE_DESC particleEmitPSO = {};
 	particleEmitPSO.pRootSignature = particleRootSignature.Get();
@@ -1170,6 +1209,7 @@ void Game::BuildPSOs()
 	};
 	particleEmitPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 	ThrowIfFailed(Device->CreateComputePipelineState(&particleEmitPSO, IID_PPV_ARGS(&PSOs["particleEmit"])));
+	PSOs["particleEmit"]->SetName(L"particleEmitPSO");
 
 	D3D12_COMPUTE_PIPELINE_STATE_DESC particleUpdatePSO = {};
 	particleUpdatePSO.pRootSignature = particleRootSignature.Get();
@@ -1180,6 +1220,7 @@ void Game::BuildPSOs()
 	};
 	particleUpdatePSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 	ThrowIfFailed(Device->CreateComputePipelineState(&particleUpdatePSO, IID_PPV_ARGS(&PSOs["particleUpdate"])));
+	PSOs["particleUpdate"]->SetName(L"particleUpdatePSO");
 
 	D3D12_COMPUTE_PIPELINE_STATE_DESC particleDrawPSO = {};
 	particleDrawPSO.pRootSignature = particleRootSignature.Get();
@@ -1190,6 +1231,7 @@ void Game::BuildPSOs()
 	};
 	particleDrawPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 	ThrowIfFailed(Device->CreateComputePipelineState(&particleDrawPSO, IID_PPV_ARGS(&PSOs["particleDraw"])));
+	PSOs["particleDraw"]->SetName(L"particleDrawPSO");
 
 	D3D12_COMPUTE_PIPELINE_STATE_DESC particleDeadListPSO = {};
 	particleDeadListPSO.pRootSignature = particleRootSignature.Get();
@@ -1200,6 +1242,7 @@ void Game::BuildPSOs()
 	};
 	particleDeadListPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 	ThrowIfFailed(Device->CreateComputePipelineState(&particleDeadListPSO, IID_PPV_ARGS(&PSOs["particleDeadList"])));
+	PSOs["particleDeadList"]->SetName(L"particleDeadListPSO");
 }
 
 void Game::BuildFrameResources()

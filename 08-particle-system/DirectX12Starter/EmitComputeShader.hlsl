@@ -32,13 +32,20 @@ RWStructuredBuffer<Particle> ParticlePool		: register(u0);
 ConsumeStructuredBuffer<uint> CDeadList			: register(u1);
 RWStructuredBuffer<ParticleDraw> DrawList		: register(u2);
 RWStructuredBuffer<uint> DrawArgs				: register(u3);
+RWStructuredBuffer<uint> DeadListCounter		: register(u4);
+
 
 [numthreads(32, 1, 1)]
 void main(uint id : SV_DispatchThreadID )
 {
-	if (id.x >= (uint)emitCount)
-		return;
-
+    if (id.x >= (uint) emitCount)
+        return;
+	
+    if (DeadListCounter[0] <= 0)
+        return;
+	
+    InterlockedAdd(DeadListCounter[0], -1);
+    
 	uint emitIndex = CDeadList.Consume();
 
 	float3 gridPosition;
@@ -51,11 +58,15 @@ void main(uint id : SV_DispatchThreadID )
 
 	// update it in ParticlePool
 	Particle emitParticle = ParticlePool.Load(emitIndex);
-
+	
+    if (emitParticle.Alive != 0.0f)
+        return;
+	
 	//color and position depend on the grid position and size
-    emitParticle.Position = gridPosition / 4.0f - float3(gridSize / 20.0f, gridSize / 20.0f, -gridSize / 10.0f) + float3(0, 100, -20);
+    //emitParticle.Position = gridPosition / 4.0f - float3(gridSize / 20.0f, gridSize / 20.0f, -gridSize / 10.0f) + float3(0, 100, -20);
+    emitParticle.Position = float3(id.x * 2, 90, 0);
 	emitParticle.Velocity = float3(0, -40.0f, 0.0f);
-	emitParticle.Color = float4(1, 1, 1, 1);
+    emitParticle.Color = float4(1, 1, 1, 1);
 	//emitParticle.Color = float4(gridPosition / gridSize, 1);
 	emitParticle.Age = 0.0f;
 	emitParticle.Size = 0.5f;

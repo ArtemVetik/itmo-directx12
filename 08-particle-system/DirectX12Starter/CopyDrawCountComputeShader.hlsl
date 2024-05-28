@@ -32,6 +32,7 @@ RWStructuredBuffer<Particle> ParticlePool		: register(u0);
 AppendStructuredBuffer<uint> ADeadList			: register(u1);
 RWStructuredBuffer<ParticleDraw> DrawList		: register(u2);
 RWStructuredBuffer<uint> DrawArgs				: register(u3);
+RWStructuredBuffer<uint> DeadListCounter		: register(u4);
 
 [numthreads(1, 1, 1)]
 void main(uint3 id : SV_DispatchThreadID)

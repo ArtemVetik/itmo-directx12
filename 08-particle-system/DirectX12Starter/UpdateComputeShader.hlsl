@@ -42,6 +42,7 @@ RWStructuredBuffer<Particle> ParticlePool		: register(u0);
 AppendStructuredBuffer<uint> ADeadList			: register(u1);
 RWStructuredBuffer<ParticleDraw> DrawList		: register(u2);
 RWStructuredBuffer<uint> DrawArgs				: register(u3);
+RWStructuredBuffer<uint> DeadListCounter		: register(u4);
 
 [numthreads(32, 1, 1)]
 void main(uint id : SV_DispatchThreadID)
@@ -51,8 +52,8 @@ void main(uint id : SV_DispatchThreadID)
 
 	Particle particle = ParticlePool.Load(id.x);
 
-	if (particle.Alive == 0.0f)
-		return;
+    if (particle.Alive == 0.0f)
+        return;
 
 	particle.Age += deltaTime;
 	
@@ -63,7 +64,7 @@ void main(uint id : SV_DispatchThreadID)
 	float3 curlPosition = particle.Position * 0.1f;
 	float3 curlVelocity = curlNoise3D(curlPosition, 1.0f);
 	//particle.Velocity = curlVelocity * 2;
-	particle.Velocity += float3(0, -10.0f * deltaTime, 0);
+    particle.Velocity += float3(0, -10.0f * deltaTime, 0);
 	
 	float3 viewPos = mul(float4(particle.Position, 1.0f), mul(world, view)).xyz;
 	float4 clipSpacePos = mul(float4(viewPos, 1.0f), projection);
@@ -90,16 +91,23 @@ void main(uint id : SV_DispatchThreadID)
 		}
 	}
 	
+    if ((float) (particle.Age < lifeTime / 2))
+        particle.Color = float4(1, 1, 1, 1);
+	else
+        particle.Color = float4(1, 0, 0, 1);
+	
 	//// put the particle back
 	ParticlePool[id.x] = particle;
-
-	// newly dead?
-	if (particle.Alive == 0.0f)
-	{
+	
+    // newly dead?
+    if (particle.Alive == 0.0f)
+    {
 		// Add to dead list
-		ADeadList.Append(id.x);
-	}
-	else
+        ADeadList.Append(id.x);
+        
+        InterlockedAdd(DeadListCounter[0], 1);
+    }
+    else
 	{
 		// increment the counter on the draw list, then put the new draw data at the returned (pre-increment) index
 		uint drawIndex = DrawList.IncrementCounter();
